@@ -1,0 +1,130 @@
+component Valve
+    % Valve
+    % 
+    % This component is a valve.
+    % 
+    % This model is imposing both flowrate end enthalpy on its outlet and floxrate on its inlet. 
+    % The inlet port must be connected to a compent node that impose pressure and enthalpy. 
+    % The oulet port must be connected to a coponent node that impose pressure
+    % 
+    % All valve's parameters must be greather than 0
+
+    inputs
+        C = { 0, '1' }; % pos:Left
+    end
+    
+    nodes
+        in1  = simCryogenics.fluid; % in:Left
+        out1 = simCryogenics.fluid; % out:Right
+    end
+    
+    parameters
+        CVmax            = { 3.2 , '1'}; % Valve flow coefficient 
+        ControlInputMin  = { 0   , '1'}; % Minimum control input
+        ControlInputMax  = { 100 , '1'}; % Maximum control output
+        Xt               = { 0.86, '1'}; % Xt valve constant
+        Rv               = { 10  , '1'}; % Rv valve constant
+        lin_v            = { 0   , '1'}; % Flow calculation method
+        lim_v            = { 0   , '1'}; % Physical limit when treated as flowrate
+    end
+    
+    parameters (Hidden=true)
+        K     = {2.4e-5, 'kg/s*(kg/m^3*bar)^(-.5)'}; % valve conversion factor
+    end
+    
+    variables (Hidden=true)
+        Cmd   = { 0, '1'     };
+        gamma = { 0, '1'     };
+        rho   = { 0, 'kg/m^3'};
+        Xc    = { 0, '1'     };
+        X     = { 0, '1'     };
+        Y     = { 0, '1'     };
+        CV    = { 0, '1'     };
+    end
+    
+    components (Hidden=true)
+        v1 = simCryogenics.Utilities.verif;
+        v2 = simCryogenics.Utilities.verif;
+    end
+    
+    function setup
+        if CVmax <= 0
+            error('Opening of the valve be greater or equal than zero');
+        end
+        if Xt <= 0
+            error('Constante Xt of the valve must be greaterthan zero');
+        end
+        if Rv <= 0
+            error('Constante Rv of the valve must be greater than zero');
+        end
+        if ControlInputMin>ControlInputMax
+            error('The minimum allowed control must be lower than the maximum');
+        end
+    end
+    
+    connections
+        connect(in1,  v1.in1);
+        connect(out1, v2.in1);
+    end  
+    
+    equations
+       
+        % he parameters with H and P inputs
+        gamma  == tablelookup(in1.P_P_H, in1.H_P_H, in1.gamma_P_H, in1.P , in1.H, interpolation=linear, extrapolation=nearest);
+        rho    == tablelookup(in1.P_P_H, in1.H_P_H, in1.rho_P_H  , in1.P , in1.H, interpolation=linear, extrapolation=nearest);               
+        
+        if (gamma<=1)
+            Xc == Xt/1.4;
+        else
+            Xc == gamma*Xt/1.4;
+        end
+        
+        if lin_v == 1
+        	CV ==0;
+            X == 0;
+            Y == 1;
+            out1.M == Cmd*{1,'kg/s'};
+            Cmd == C;
+        else
+            % Correcting the valve commande
+            if  C < ControlInputMin
+                Cmd == ControlInputMin;
+            elseif C > ControlInputMax
+                Cmd == ControlInputMax;
+            else
+                Cmd == C;
+            end
+            assert(value(C,'1')         <=value(ControlInputMax, '1'), 'The opening of the valve can''t be greater than CMAX (overwritting to CMAX)', Warn = true);
+            assert(value(C,'1')         >=value(ControlInputMin, '1'), 'The opening of the valve must be greater than CMIN (overwritting to CMIN)'  , Warn = true); 
+            
+            CV  == CVmax/Rv*(exp(Cmd/100*log(Rv))-(1-Cmd/100));
+            
+            if ((in1.P>0) && (out1.P>0) )
+                % Case 1 : error Pout>Pin
+                if in1.P < out1.P
+                    X == 0;
+                    Y == 1;
+                    out1.M == 0;
+                % Case 2 : subsonic flow
+                elseif (((in1.P-out1.P)/(in1.P)) <= Xc)
+                    X == (in1.P-out1.P)/in1.P;
+                    Y == 1 - X/(3*Xc);
+                    assert(X >= 0,'X<0! X =', Warn = true);
+                    out1.M == K*(1e5)^.5*CV*Y*sqrt(rho)*sqrt(abs(X))*sqrt(in1.P);
+                % Case 3 : sonic flow
+                else
+                    X == Xc;
+                    Y == 2/3;
+                    out1.M == K*(1e5)^.5*CV*Y*sqrt(rho)*sqrt(X)*sqrt(in1.P);
+                end   
+            else
+                X == 0;
+                Y == 1;
+                out1.M == 0;
+            end
+        end
+            
+        out1.M == in1.M;
+        out1.H == in1.H;
+    end
+end

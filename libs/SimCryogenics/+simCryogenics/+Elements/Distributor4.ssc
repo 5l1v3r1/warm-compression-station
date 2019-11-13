@@ -1,0 +1,34 @@
+component Distributor4 < simCryogenics.Elements.Distributor
+    % Distributor4 : 1.5
+    %
+    % This component is a distributor. It allows the user to connect one 
+    % component to serval others.
+    %
+    % This component impose both enthalpy and pressure on its outlets and 
+    % the flow rate on the inlet. To ensure compilation, the distributor inlet 
+    % must be connected to a component node that impose both pressure and
+    % enthalpy (such as a pipe outlet). Every outlets must be connected to 
+    % a component node that impose the flowrate (such a valve inlet). 
+    nodes
+        out3 = simCryogenics.fluid;  % :right
+        out4 = simCryogenics.fluid;  % :right
+    end
+    
+    components (Hidden=true)
+    	v4 = simCryogenics.Utilities.verif;
+        v5 = simCryogenics.Utilities.verif;
+    end
+     
+    connections
+        connect(out3,  v4.in1);
+        connect(out4,  v5.in1);
+    end
+    
+    equations
+        out3.P == in1.P;
+        out4.P == in1.P;
+        out3.H == in1.H;
+        out4.H == in1.H;
+        in1.M  == out1.M+out2.M+out3.M+out4.M;
+    end
+end

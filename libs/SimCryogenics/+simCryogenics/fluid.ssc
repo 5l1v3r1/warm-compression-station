@@ -1,0 +1,110 @@
+domain fluid
+    % fluidHelium domain
+    % The different variables are : pressure, enthalpy and mass flow rate
+    parameters (Size = variable)
+        
+        % helium properties with P and T inputs
+        T_T_P     = {1:100, 'K'  };            % temperature
+        P_T_P     = {1:100, 'bar'};            % pressure
+        
+        H_T_P     = {ones(100,100), 'kJ/kg'  }; % enthalpy
+        Cp_T_P    = {ones(100,100), 'kJ/kg/K'}; % specific heat
+        
+        % helium properties with P and H inputs
+        P_P_H     = {1:100, 'bar' };     % pressure
+        H_P_H     = {1:100, 'kJ/kg'};     % enthalpy
+        
+        X_P_H     = {ones(100,100), '1'     }; % quality
+        T_P_H     = {ones(100,100), 'K'     }; % temperature
+        rho_P_H   = {ones(100,100), 'kg/m^3'}; % density
+        gamma_P_H = {ones(100,100), '1'     }; % specific heat ratio
+        S_P_H     = {ones(100,100), 'kJ/kg'}; % entropy
+        Z_P_H     = {ones(100,100), '1'     }; % compression factor
+        Cp_P_H    = {ones(100,100), 'kJ/kg/K'}; % specific heat
+        mu_P_H    = {ones(100,100), 'kg/(m*s)'}; % viscosity
+        Pr_P_H    = {ones(100,100), '1'}; % Prandtl
+
+        % helium propertis with u and rho inputs
+        u_u_rho   = {1:100, 'kJ/kg'  };       % specific energy
+        rho_u_rho = {1:100, 'kg/m^3'};       % volumique masse
+        
+        H_u_rho   = {ones(100,100), 'kJ/kg'}; % enthalpy
+        P_u_rho   = {ones(100,100), 'bar' }; % pressure
+        T_u_rho   = {ones(100,100), 'K'   }; % temperature
+        X_u_rho   = {ones(100,100), '1'   }; % quality
+        
+%         % helium propertis with u and rho inputs aroud boiling
+%         u_u_rho_b   = {1:100, 'J/kg'  };       % specific energy
+%         rho_u_rho_b = {1:100, 'kg/m^3'};       % volumique masse
+%         
+%         H_u_rho_b   = {ones(100,100), 'kJ/kg'}; % enthalpy
+%         P_u_rho_b   = {ones(100,100), 'bar' }; % pressure
+%         T_u_rho_b   = {ones(100,100), 'K'   }; % temperature
+%         X_u_rho_b   = {ones(100,100), '1'   }; % quality
+        
+        % helium properties with P and S inputs
+        P_P_S     = {1:100, 'bar'   };   % pressure
+        S_P_S     = {1:100, 'kJ/kg'};   % entropy
+        
+        H_P_S     = {ones(100,100), 'kJ/kg'}; % enthalpy
+        
+        % helium propertis with T and rho inputs
+        T_T_rho   = {1:100, 'K'     };      % temperature
+        rho_T_rho = {1:100, 'kg/m^3'};      % volumique masse
+        
+        H_T_rho   = {ones(100,100), 'kJ/kg'}; % enthalpy
+        
+        % helium properties with SV and P inputs
+        P_SV_P  = {1:1000, 'bar'};       % volumique masse
+        
+        HG_SV_P = {ones(1,1000), 'kJ/kg'}; % Gaz enthalpy
+        
+        % helium properties with SL and P inputs
+        P_SL_P  = {1:1000, 'bar'};       % volumique masse
+        
+        HL_SL_P = {ones(1,1000), 'kJ/kg'}; % liquid enthalpy
+        T_SV_P  = {ones(1,1000), 'K'}; % liquid temp
+        
+        % helium properties with P and X inputs
+        P_P_X  = {1:100, 'bar'}; % pressure
+        X_P_X  = {1:100, '1'};   % quality
+        
+        H_P_X   = {ones(100), 'J/kg'}; % enthalpy
+        
+        % Aluminium properties with Thot and Tcold inputs
+        Th_Tc = {1:100, 'K'  };            % temperature
+        
+        Cpalum_Th_Tc = {ones(1,100),'kJ/kg/K'};
+        
+    end
+    
+    parameters
+        % others properties
+        T_min   = { 0.01, 'K'     }; % Minimum allowable temperature
+        P_min   = { 0.01, 'bar'   }; % Minimum allowable pressure
+        T_max   = { 500, 'K'     }; % Maximum allowable temperature
+        P_max   = { 50, 'bar'   }; % Maximum allowable pressure
+    end
+    
+    parameters(Hidden = true)        
+        Mol     = { 0, 'kg/mol'}; % Molar mass
+        gas     = { 0, '1'     }; % Type of gas
+        
+        % Calculated properties
+        H_min   = { 1, 'kJ/kg'   }; % Minimum allowable enthalpy
+        S_min   = { 1, 'kJ/kg' }; % Minimum allowable entropy
+        rho_min = { 1, 'kg/m^3' }; % Minimum allowable volumique mass
+        u_min   = { 1, 'kJ/kg'   }; % Minimum allowable Specific energy
+        H_max   = { 1e6, 'kJ/kg'   }; % Maximum allowable enthalpy
+        S_max   = { 1e6, 'kJ/kg' }; % Maximum allowable entropy
+        rho_max = { 1e6, 'kg/m^3' }; % Maximum allowable volumique mass
+        u_max   = { 1e6, 'kJ/kg'   }; % Maximum allowable Specific energy
+        R       = { 0, 'J/K/mol'}; % Perfect gaz constant
+    end
+    
+    variables
+        P  = { 0, 'bar' }; % Pressure
+        M  = { 0, 'kg/s'}; % Masse flow rate
+        H  = { 0, 'kJ/kg'}; % Enthalpy
+    end
+end

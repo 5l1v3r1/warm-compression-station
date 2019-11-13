@@ -1,0 +1,25 @@
+component (Hidden=true) valveSmallOpening 
+    % valveSmallOpening : 2
+    %
+    % this is the help
+    
+    inputs
+        I  = { 0, '1'}; % I : left
+    end
+    
+    outputs
+        O = { 0, '1'}; % O : right
+    end
+    
+    parameters
+        openingStart = { 2.0, '1' };  % Opening start
+    end
+    
+    equations
+        if I<openingStart
+            O == 0;
+        else
+            O == I;
+        end
+    end
+end

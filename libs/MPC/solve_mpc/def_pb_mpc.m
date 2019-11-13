@@ -1,0 +1,19 @@
+function mpc = def_pb_mpc(u_t,w_t,x_t,y_ref_t,u_ref_t,mpc)
+
+    mpc.pb.gamma_vect = mpc.pb.gamma_cst + ...
+                        mpc.pb.gamma_x*x_t + ...
+                        mpc.pb.gamma_u*u_t + ... 
+                        mpc.pb.gamma_w*w_t;
+            
+    if strcmp(mpc.solver,'ode-based')
+        ref_cst = [];
+    elseif strcmp(mpc.solver,'active-set')
+        ref_cst = zeros(5,1);
+    end
+    
+    mpc.pb.h_vect =  mpc.pb.F1*x_t + ...
+                    mpc.pb.F2*y_ref_t + ...
+                    mpc.pb.F3*w_t + ...
+                    mpc.pb.F4*[u_ref_t; ref_cst];
+    
+end

@@ -1,0 +1,59 @@
+component PI
+    % PI controller
+    % This regulation bloc implements a simple P controller by multiplying 
+    % the error relative to the reference and adding the result with a specified offset.
+    % Input p_v (measure) should be connected to a physical signal from a sensor.
+    % Input f_c (final command) is the constant command to be applied after switch time.
+    % Output p_c (command) is the resulting command.
+    % Parameter st (switch time) is the time at which you want to switch to a constant command
+    % when the simulation time exceeds st, the regulation will be turned off and the specified 
+    % constant command will be applied.
+  
+    inputs
+        PV = { 0, '1'}; % PV :left
+        Tr = { 0, '1'}; % Tr :left
+        SP = { 0, '1'}; % SP :left
+    end 
+    
+    outputs
+        PC = {0, '1'}; % PC :right
+    end
+    
+    parameters
+        ctrl_type   = { 0,    '1'  }; % Controller type
+        p_gain      = { 1,    '1'  }; % Proportional gain
+        i_gain      = { 1,    '1/s'}; % Integral gain
+        offset      = { 1,    '1'  }; % PC offset
+        sat_min     = { -1e9, '1'  }; % PC saturation minimum
+        sat_max     = { +1e9, '1'  }; % PC saturation maximum
+    end
+    
+    variables (Hidden = true)
+        c_PC   = {0, '1'}; % Computed PC
+        err    = {0, '1'}; % Error relative to the reference
+        errDer = {0, '1'}; % Error first order derivative
+    end
+
+    function setup
+        if sat_min > sat_max, error('Saturation minimum must be lower than saturation maximum'); end
+        errDer = 0;
+    end
+   
+    equations
+        err == SP - PV;
+        
+        if (ctrl_type == 0 | Tr~=0)
+            errDer.der == 0;
+        else
+            errDer.der == err*i_gain;
+        end
+        
+        c_PC == p_gain*err + offset + errDer;
+        
+        if ( Tr==0 ) % tracking mode
+            PC == max(min(c_PC,sat_max),sat_min);
+        else
+            PC == SP;
+        end
+    end
+end

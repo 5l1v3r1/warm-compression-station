@@ -1,0 +1,17 @@
+component XT
+    % XT : 2 : fixed
+    %
+    % This component is a perfect quality sensor
+    %
+    nodes
+        in1 = simCryogenics.fluid; % : Left
+    end
+    
+    outputs
+        XT = { 0, '1'}; % : Right
+    end
+    
+    equations
+        XT == tablelookup(in1.P_P_H, in1.H_P_H, in1.X_P_H, in1.P, in1.H, interpolation=linear);    
+    end
+end

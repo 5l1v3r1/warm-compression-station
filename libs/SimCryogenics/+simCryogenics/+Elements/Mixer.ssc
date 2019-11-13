@@ -1,0 +1,34 @@
+component (Hidden = true ) Mixer
+    % Mixer
+    %
+    % This component is a mixer. It allows to connect several components to another one.
+    %  
+    % This component impose both enthalpy and flowrate on the outlet and 
+    % pressure on inlets. To ensure compilation, the mixer inlets must be
+    % connected to a component node that impose pressure (such as a pipe
+    % inlet). The outlet must be connected to a component node that 
+    % impose both flowrate and enthalpy (such a valve outlet). 
+    
+    nodes
+        in1  = simCryogenics.fluid;  % :left
+        in2  = simCryogenics.fluid;  % :left
+        out1 = simCryogenics.fluid;  % :right
+    end
+    
+    components (Hidden=true)
+         v1 = simCryogenics.Utilities.verif;
+         v2 = simCryogenics.Utilities.verif;
+         v3 = simCryogenics.Utilities.verif;
+    end
+     
+    connections
+        connect(in1,  v1.in1);
+        connect(in2, v2.in1) ;
+        connect(out1, v3.in1) ;
+    end
+        
+    equations
+        in1.P   == out1.P;
+        in2.P   == out1.P;
+    end
+end

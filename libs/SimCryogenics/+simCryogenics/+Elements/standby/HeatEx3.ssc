@@ -1,0 +1,389 @@
+component HeatEx3
+%     HeatEx3 : 4
+%     
+%     This component is a two flows cross current heat Exchanger
+%     
+%     The following variables are imposed to others components:
+%       - Hot inlet port : flow rate
+%       - Hot outlet port : both pressure and temperature 
+%       - Cold inlet port : both temperature and flow rate
+%       - Cold outlet port : pressure
+   
+    nodes        
+        LeftH  = simCryogenics.fluid; % LeftH:left
+        RightH = simCryogenics.fluid; % RightH:right
+        LeftM = simCryogenics.fluid ; % LeftM:left
+        RightM = simCryogenics.fluid ; % RightM:right
+        LeftC  = simCryogenics.fluid; % LeftC:left
+        RightC = simCryogenics.fluid; % RightC:right
+    end
+
+     parameters
+        N   = { 8     , '1'       }; % Number of elementary loop
+        Vh  = { 2.3e-3, 'm^3'     }; % Hot pipe volume
+        Vm = { 2.3e-3, 'm^3'     }    % Middle pipe volume
+        Vc  = { 2.3e-3, 'm^3'     }; % Cold pipe volume
+        M   = { 13    , 'kg'      }; % Masse of the aluminium
+        Kh  = { 0   , 'bar*s/kg'}; % Drop in the hot pipe
+        Km =  { 0   , 'bar*s/kg'}; % Dop in the middle pipe
+        Kc  = { 0  , 'bar*s/kg'}; % Drop in the cold pipe
+        hh_m   = { 400   , 'J/s/K'   }; % Exchange coefficient between the hot pipe and the middle pipe
+        hh_c   = { 400   , 'J/s/K'   }; % Exchange coefficient between the hot pipe and the cold pipe
+        hm_c   = { 400   , 'J/s/K'   }; % Exchange coefficient between the middle pipe and the cold pipe
+        Ph0 = { 16    , 'bar'     }; % Initial hot pressure
+        Th0 = { 10    , 'K'       }; % Initial hot temperature
+        Pm0 = { 10    , 'bar'     }; % Initial middle pressure
+        Tm0 = { 5    , 'K'       }; % Initial middle temperature
+        Pc0 = { 1.1   , 'bar'     }; % Initial cold pressure
+        Tc0 = { 4.5   , 'K'       }; % Initial cold temperature
+        Mh0 = { 0.037*2 , 'kg/s'    }; % Initial hot mass flow
+        Mm0 = { 0.037 , 'kg/s'    }; % Initial middle mass flow
+        Mc0 = { 0.037 , 'kg/s'    }; % Initial cold mass flow 
+        sensh = { 0 , '1'    }; % Sens hot  flow      
+        sensm = { 1 , '1'    }; % Sens middle flow
+        sensc = { 1 , '1'    }; % Sens cold flow
+     end
+    
+    variables 
+         % For the calculation of the temperature
+        rhoH_H  = { zeros(8,1), 'kg/m^3'};
+        rhoM_H  = { zeros(8,1), 'kg/m^3'};
+        rhoC_H  = { zeros(8,1), 'kg/m^3'};
+
+        % For the calculation of the mass flow
+        rhoH_M = { zeros(9,1), 'kg/m^3'};
+        rhoM_M = { zeros(9,1), 'kg/m^3'};
+        rhoC_M = { zeros(9,1), 'kg/m^3'};
+
+        THout  = { zeros(9,1), 'K'     };
+        TMout  = { zeros(9,1), 'K'     };
+        TCout  = { zeros(9,1), 'K'     };
+
+        THoutbs  = { zeros(9,1), 'K'     };
+        TMoutbs  = { zeros(9,1), 'K'     };
+        TCoutbs  = { zeros(9,1), 'K'     };
+    
+        HHout  = { zeros(8,1), 'J/kg'  };
+        HMout  = { zeros(8,1), 'J/kg'  };
+        HCout  = { zeros(8,1), 'J/kg'  };
+        
+        HHin   = { zeros(1,1), 'J/kg'  };
+        HMin   = { zeros(1,1), 'J/kg'  };
+        HCin   = { zeros(1,1), 'J/kg'  };
+
+        Q1      = { zeros(8,1), 'J/s'   };
+        Q2      = { zeros(8,1), 'J/s'   };
+        Q3      = { zeros(8,1), 'J/s'   }; 
+        
+        Qh    = { zeros(8,1), 'J/s'   };
+        Qm    = { zeros(8,1), 'J/s'   };
+        Qc    = { zeros(8,1), 'J/s'   };  
+        
+        CpH    = { zeros(8,1), 'J/kg/K'};
+        CpM    = { zeros(8,1), 'J/kg/K'};
+        CpC    = { zeros(8,1), 'J/kg/K'};
+
+        Cpalu  = { zeros(8,1), 'J/kg/K'};
+
+        dmh    = { zeros(8,1), 'kg/s'  };
+        dmm    = { zeros(8,1), 'kg/s'  };
+        dmc    = { zeros(8,1), 'kg/s'  };
+
+        Mc     = { zeros(8,1), 'kg/s'  };
+        Mm     = { zeros(8,1), 'kg/s'  };
+        Mh     = { zeros(8,1), 'kg/s'  };
+
+        Pc     = { zeros(8,1), 'bar'   };
+        Pm     = { zeros(8,1), 'bar'   };
+        Ph     = { zeros(8,1), 'bar'   };
+
+        Cst    = { 1, '1'              }; % Constant for reduce the beginning derivate
+    end
+
+	function setup
+        if N <= 0, error('discretization must be greater than zero'); end
+        if Vh <= 0, error('Hot pipe volume must be greater than zero'); end
+        if Vm <= 0, error('Middle pipe volume must be greater than zero'); end
+        if Vc <= 0, error('Cold pipe volume must be greater than zero'); end
+        if M <= 0, error('Mass of aluminium must be greater than zero'); end
+        if Kh < 0, error('The loss of load coefficient in the hot pipe must be greater than zero or equal'); end
+        if Km < 0, error('he loss of load coefficient in the hot pipe must be greater than zero or equal'); end
+        if Kc < 0, error('he loss of load coefficient in the hot pipe must be greater than zero or equal'); end
+        if hh_m <= 0, error('Exchange coefficiant between hot and middle pipes must be greater than 0'); end
+        if hh_c <= 0, error('Exchange coefficiant between hot and cold pipes must be greater than 0'); end
+        if hm_c <= 0, error('Exchange coefficiant between middle and cold pipes must be greater than 0'); end      
+        if Ph0 <= 0, error('Initiale pressure of the hot pipe must be greater than 0'); end
+        if Pm0 <= 0, error('Initiale pressure of the middle pipe must be greater than 0'); end    
+        if Pm0 <= 0, error('Initiale pressure of the cold pipe must be greater than 0'); end    
+        if Mh0 <= 0, error('Initiale flow rate in the hot pipe must be greater than 0'); end        
+        if Mm0 <= 0, error('Initiale flow rate in the middle pipe must be greater than 0'); end    
+        if Mc0 <= 0, error('Initiale flow rate in the cold pipe must be greater than 0'); end        
+        if sensh ~= 0 && sensh ~=1, error('Sensh must be 1 or 0'); end  
+        if sensm ~= 0 && sensm ~=1, error('Sensm must be 1 or 0'); end        
+        if sensc ~= 0 && sensc ~=1, error('Sensc must be 1 or 0'); end
+
+        f = @(Tt)ex_multizone_conti_centree_der_3b(	value(Th0,'K'),...
+                                                    value(Tm0,'K'),...
+                                                    value(Tc0,'K'),...
+                                                    value(Mh0,'kg/s'),...
+                                                    value(Mm0,'kg/s'),...
+                                                    value(Mc0,'kg/s'),...
+                                                    value(Ph0,'bar'),...
+                                                    value(Pm0,'bar'),...
+                                                    value(Pc0,'bar'),...
+                                                    value(N,'1'),...
+                                                    value(Vh,'m^3'),...
+                                                    value(Vm,'m^3'),...
+                                                    value(Vc,'m^3'),...
+                                                    value(hh_m,'W/K'),...
+                                                    value(hh_c,'W/K'),...
+                                                    value(hm_c,'W/K'),...
+                                                    value(sensh,'1'),...
+                                                    value(sensm,'1'),...
+                                                    value(sensc,'1'),...
+                                                    value(M,'kg'),Tt);
+
+        T(1:3:3*value(N,'1'),1) = linspace(value(Th0,'K')  ,value(Tc0,'K')+0.5,value(N,'1'))'; % init guess Th
+        T(2:3:3*value(N,'1'),1) = linspace(value(Th0,'K')  ,value(Tm0,'K'),value(N,'1'))'; % init guess Tm
+        T(3:3:3*value(N,'1'),1) = linspace(value(Th0,'K')-1,value(Tc0,'K'),value(N,'1'))'; % init guess Tc  
+
+        opt = optimset('Display','off','TolFun',1e-10,'TolX',1e-10);
+        T   = fsolve(f,T,opt);
+
+        if (sensh == 0), HHout = {hecalc(9, 0, 'T', T(1:3:end) ,'P', value(Ph0,'Pa') , 0), 'J/kg'};
+        else, HHout = {hecalc(9, 0, 'T', T(end-2:-3:1) ,'P', value(Ph0,'Pa') , 0), 'J/kg'}; end
+        if (sensm == 0), HMout = {hecalc(9, 0, 'T', T(2:3:end-1) ,'P', value(Pm0,'Pa') , 0), 'J/kg'};
+        else, HMout = {hecalc(9, 0, 'T', T(end-1:-3:2) ,'P', value(Pm0,'Pa') , 0), 'J/kg'}; end
+        if (sensc == 0), HCout = {hecalc(9, 0, 'T', T(3:3:end),'P', value(Pc0,'Pa') , 0), 'J/kg'};
+        else, HCout = {hecalc(9, 0, 'T', T(end:-3:3)   ,'P', value(Pc0,'Pa') , 0), 'J/kg'}; end
+    end 
+
+    equations
+        if (sensh == 0) % hot pipe
+            Ph(1)   == LeftH.P   - 0*Kh/N*Mh(8);
+            Ph(2:8) == Ph(1:7) - 0*Kh/N*Mh(7:-1:1);
+            LeftH.M  == Mh(8)
+            RightH.P == Ph(8);
+            THoutbs(1:9) == THout(1:9);
+            Mh(1)   == RightH.M  + dmh(8);
+            Mh(2:8) == Mh(1:7) + dmh(7:-1:1);
+            Qh == -Q1(1:8) - Q2(1:8);
+            HHin == LeftH.H;
+            RightH.H == HHout(8);
+        else
+            Ph(1)   == RightH.P  + 0*Kh/N*Mh(8);
+            Ph(2:8) == Ph(1:7) + 0*Kh/N*Mh(7:-1:1);    
+            RightH.M  == Mh(8)
+            LeftH.P == Ph(8);
+            THoutbs(1:9) == THout(9:-1:1);
+            Mh(1)   == LeftH.M - dmh(1);
+            Mh(2:8) == Mh(1:7)- dmh(2:8);
+            Qh == -Q1(8:-1:1) - Q2(8:-1:1);
+            HHin == RightH.H;
+            LeftH.H == HHout(8)
+        end
+
+        % rhoH properties for the calculation of H hot
+        rhoH_H(1)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(1), (HHin + HHout(1))/2, interpolation=linear);
+        rhoH_H(2)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(2), (HHout(1) + HHout(2))/2, interpolation=linear);
+        rhoH_H(3)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(3), (HHout(2) + HHout(3))/2, interpolation=linear);
+        rhoH_H(4)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(4), (HHout(3) + HHout(4))/2, interpolation=linear);
+        rhoH_H(5)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(5), (HHout(4) + HHout(5))/2, interpolation=linear);
+        rhoH_H(6)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(6), (HHout(5) + HHout(6))/2, interpolation=linear);
+        rhoH_H(7)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(7), (HHout(6) + HHout(7))/2, interpolation=linear);
+        rhoH_H(8)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(8), (HHout(7) + HHout(8))/2, interpolation=linear);
+        
+        % rhoH properties for the calculation of M hot
+        rhoH_M(1)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(1), HHin, interpolation=linear);
+        rhoH_M(2)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(2), HHout(1), interpolation=linear);
+        rhoH_M(3)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(3), HHout(2), interpolation=linear);
+        rhoH_M(4)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(4), HHout(3), interpolation=linear);
+        rhoH_M(5)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(5), HHout(4), interpolation=linear);
+        rhoH_M(6)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(6), HHout(5), interpolation=linear);
+        rhoH_M(7)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(7), HHout(6), interpolation=linear);
+        rhoH_M(8)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(8), HHout(7), interpolation=linear);
+        rhoH_M(9)  == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.rho_P_H , Ph(8), HHout(8), interpolation=linear);
+
+        % THout properties for the calculation of Q
+        THout(1) == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.T_P_H, Ph(1), HHin, interpolation = linear);
+        THout(2) == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.T_P_H, Ph(2), HHout(1), interpolation = linear);
+        THout(3) == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.T_P_H, Ph(3), HHout(2), interpolation = linear);
+        THout(4) == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.T_P_H, Ph(4), HHout(3), interpolation = linear);
+        THout(5) == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.T_P_H, Ph(5), HHout(4), interpolation = linear);
+        THout(6) == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.T_P_H, Ph(6), HHout(5), interpolation = linear);
+        THout(7) == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.T_P_H, Ph(7), HHout(6), interpolation = linear);
+        THout(8) == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.T_P_H, Ph(8), HHout(7), interpolation = linear);
+        THout(9) == tablelookup(LeftH.P_P_H, LeftH.H_P_H, LeftH.T_P_H, Ph(8), HHout(8), interpolation = linear);
+
+        % CpH properties for calculation of H hot
+        CpH(1)   == tablelookup(LeftH.T_T_P, LeftH.P_T_P, LeftH.Cp_T_P  , (THout(1) + THout(2))/2, Ph(1), interpolation=linear);
+        CpH(2)   == tablelookup(LeftH.T_T_P, LeftH.P_T_P, LeftH.Cp_T_P  , (THout(2) + THout(3))/2, Ph(2), interpolation=linear);
+        CpH(3)   == tablelookup(LeftH.T_T_P, LeftH.P_T_P, LeftH.Cp_T_P  , (THout(3) + THout(4))/2, Ph(3), interpolation=linear);
+        CpH(4)   == tablelookup(LeftH.T_T_P, LeftH.P_T_P, LeftH.Cp_T_P  , (THout(4) + THout(5))/2, Ph(4), interpolation=linear);
+        CpH(5)   == tablelookup(LeftH.T_T_P, LeftH.P_T_P, LeftH.Cp_T_P  , (THout(5) + THout(6))/2, Ph(5), interpolation=linear);
+        CpH(6)   == tablelookup(LeftH.T_T_P, LeftH.P_T_P, LeftH.Cp_T_P  , (THout(6) + THout(7))/2, Ph(6), interpolation=linear);
+        CpH(7)   == tablelookup(LeftH.T_T_P, LeftH.P_T_P, LeftH.Cp_T_P  , (THout(7) + THout(8))/2, Ph(7), interpolation=linear);
+        CpH(8)   == tablelookup(LeftH.T_T_P, LeftH.P_T_P, LeftH.Cp_T_P  , (THout(8) + THout(9))/2, Ph(8), interpolation=linear); 
+
+        if (sensm == 0) % Middle Pipe  
+            Pm(1)   == LeftM.P  - 0*Km/N*Mm(8);
+            Pm(2:8) == Pm(1:7) - 0*Km/N*Mm(7:-1:1);
+            LeftM.M == Mm(8);
+            RightM.P  == Pm(8);
+            TMoutbs(1:9) == TMout(1:9); 
+            Mm(1)   == RightM.M  + dmm(8);
+            Mm(2:8) == Mm(1:7) + dmm(7:-1:1);
+            Qm == +Q1(1:8) - Q3(1:8);
+            HMin == LeftM.H;        
+            RightM.H == HMout(8);
+        else
+            Pm(1)   == RightM.P  + 0*Km/N*Mm(8);
+            Pm(2:8) == Pm(1:7) + 0*Km/N*Mm(7:-1:1);
+            RightM.M == Mm(8);
+            LeftM.P  == Pm(8);
+            TMoutbs(1:9) == TMout(9:-1:1);
+            Mm(1)   == LeftM.M  - dmm(1);
+            Mm(2:8) == Mm(1:7)- dmm(2:8);
+            Qm == +Q1(8:-1:1) - Q3(8:-1:1);   
+            HMin == RightM.H;         
+            LeftM.H == HMout(8);
+        end
+        
+        
+        
+        % rhoM properties for the calculation of H middle
+        rhoM_H(1)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(1), (HMin + HMout(1))/2, interpolation=linear);
+        rhoM_H(2)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(2), (HMout(1) + HMout(2))/2, interpolation=linear);
+        rhoM_H(3)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(3), (HMout(2) + HMout(3))/2, interpolation=linear);
+        rhoM_H(4)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(4), (HMout(3) + HMout(4))/2, interpolation=linear);
+        rhoM_H(5)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(5), (HMout(4) + HMout(5))/2, interpolation=linear);
+        rhoM_H(6)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(6), (HMout(5) + HMout(6))/2, interpolation=linear);
+        rhoM_H(7)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(7), (HMout(6) + HMout(7))/2, interpolation=linear);
+        rhoM_H(8)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(8), (HMout(7) + HMout(8))/2, interpolation=linear);
+
+        %rhoM properties for the calculation of M middle
+        rhoM_M(1)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(1), HMin  , interpolation=linear);
+        rhoM_M(2)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(2), HMout(1), interpolation=linear);
+        rhoM_M(3)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(3), HMout(2), interpolation=linear);
+        rhoM_M(4)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(4), HMout(3), interpolation=linear);
+        rhoM_M(5)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(5), HMout(4), interpolation=linear);
+        rhoM_M(6)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(6), HMout(5), interpolation=linear);
+        rhoM_M(7)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(7), HMout(6), interpolation=linear);
+        rhoM_M(8)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(8), HMout(7), interpolation=linear);
+        rhoM_M(9)  == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.rho_P_H , Pm(8), HMout(8), interpolation=linear);
+
+        % TMout properties for the calculation of Q
+        TMout(1) == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.T_P_H, Pm(1), HMin   , interpolation = linear);
+        TMout(2) == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.T_P_H, Pm(2), HMout(1), interpolation = linear);
+        TMout(3) == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.T_P_H, Pm(3), HMout(2), interpolation = linear);
+        TMout(4) == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.T_P_H, Pm(4), HMout(3), interpolation = linear);
+        TMout(5) == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.T_P_H, Pm(5), HMout(4), interpolation = linear);
+        TMout(6) == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.T_P_H, Pm(6), HMout(5), interpolation = linear);
+        TMout(7) == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.T_P_H, Pm(7), HMout(6), interpolation = linear);
+        TMout(8) == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.T_P_H, Pm(8), HMout(7), interpolation = linear);
+        TMout(9) == tablelookup(LeftM.P_P_H, LeftM.H_P_H, LeftM.T_P_H, Pm(8), HMout(8), interpolation = linear);
+
+        %CpH properties for calculation of H middle
+        CpM(1)   == tablelookup(LeftM.T_T_P, LeftM.P_T_P, LeftM.Cp_T_P  , (TMout(1) + TMout(2))/2, Pm(1), interpolation=linear);
+        CpM(2)   == tablelookup(LeftM.T_T_P, LeftM.P_T_P, LeftM.Cp_T_P  , (TMout(2) + TMout(3))/2, Pm(2), interpolation=linear);
+        CpM(3)   == tablelookup(LeftM.T_T_P, LeftM.P_T_P, LeftM.Cp_T_P  , (TMout(3) + TMout(4))/2, Pm(3), interpolation=linear);
+        CpM(4)   == tablelookup(LeftM.T_T_P, LeftM.P_T_P, LeftM.Cp_T_P  , (TMout(4) + TMout(5))/2, Pm(4), interpolation=linear);
+        CpM(5)   == tablelookup(LeftM.T_T_P, LeftM.P_T_P, LeftM.Cp_T_P  , (TMout(5) + TMout(6))/2, Pm(5), interpolation=linear);
+        CpM(6)   == tablelookup(LeftM.T_T_P, LeftM.P_T_P, LeftM.Cp_T_P  , (TMout(6) + TMout(7))/2, Pm(7), interpolation=linear);
+        CpM(7)   == tablelookup(LeftM.T_T_P, LeftM.P_T_P, LeftM.Cp_T_P  , (TMout(7) + TMout(8))/2, Pm(8), interpolation=linear);
+        CpM(8)   == tablelookup(LeftM.T_T_P, LeftM.P_T_P, LeftM.Cp_T_P  , (TMout(8) + TMout(9))/2, Pm(8), interpolation=linear);            
+
+        if (sensc == 0) % Cold Pipe
+            Pc(1)   == LeftC.P  - 0*Kc/N*Mc(8);
+            Pc(2:8) == Pc(1:7) - 0*Kc/N*Mc(7:-1:1);
+            LeftC.M == Mc(8);
+            RightC.P  == Pc(8);
+            TCoutbs(1:9) == TCout(1:9);
+            Mc(1)   == RightC.M  + dmc(8); 
+            Mc(2:8) == Mc(1:7)+ dmc(7:-1:1);
+            Qc == +Q2(1:8) + Q3(1:8);
+            HCin == LeftC.H;
+            RightC.H == HCout(8);   
+        else
+            Pc(1)   == RightC.P  + 0*Kc/N*Mc(8);
+            Pc(2:8) == Pc(1:7) + 0*Kc/N*Mc(7:-1:1);
+            RightC.M == Mc(8);
+            LeftC.P  == Pc(8);
+            TCoutbs(1:9) == TCout(9:-1:1);
+            Mc(1)   == LeftC.M  - dmc(1); 
+            Mc(2:8) == Mc(1:7) - dmc(2:8);
+            Qc == +Q2(8:-1:1) + Q3(8:-1:1);
+            HCin == RightC.H;
+            LeftC.H == HCout(8);
+        end
+        
+        % rhoC properties for calculation of H cold
+        rhoC_H(1)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(1), (HCin    + HCout(1))/2, interpolation=linear);
+        rhoC_H(2)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(2), (HCout(1) + HCout(2))/2, interpolation=linear);
+        rhoC_H(3)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(3), (HCout(2) + HCout(3))/2, interpolation=linear);
+        rhoC_H(4)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(4), (HCout(3) + HCout(4))/2, interpolation=linear);
+        rhoC_H(5)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(5), (HCout(4) + HCout(5))/2, interpolation=linear);
+        rhoC_H(6)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(6), (HCout(5) + HCout(6))/2, interpolation=linear);
+        rhoC_H(7)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(7), (HCout(6) + HCout(7))/2, interpolation=linear);
+        rhoC_H(8)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(8), (HCout(7) + HCout(8))/2, interpolation=linear);
+
+        % rhoC properties for calculation of M cold
+        rhoC_M(1)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(1), HCin   , interpolation=linear);
+        rhoC_M(2)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(2), HCout(1), interpolation=linear);
+        rhoC_M(3)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(3), HCout(2), interpolation=linear);
+        rhoC_M(4)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(4), HCout(3), interpolation=linear);
+        rhoC_M(5)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(5), HCout(4), interpolation=linear);
+        rhoC_M(6)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(6), HCout(5), interpolation=linear);
+        rhoC_M(7)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(7), HCout(6), interpolation=linear);
+        rhoC_M(8)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(8), HCout(7), interpolation=linear);
+        rhoC_M(9)  == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.rho_P_H, Pc(8), HCout(8), interpolation=linear);
+
+        % TCout properties for the calculation of Q        
+        TCout(1) == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.T_P_H, Pc(1), HCin   , interpolation = linear);
+        TCout(2) == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.T_P_H, Pc(2), HCout(1), interpolation = linear);
+        TCout(3) == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.T_P_H, Pc(3), HCout(2), interpolation = linear);
+        TCout(4) == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.T_P_H, Pc(4), HCout(3), interpolation = linear);
+        TCout(5) == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.T_P_H, Pc(5), HCout(4), interpolation = linear);
+        TCout(6) == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.T_P_H, Pc(6), HCout(5), interpolation = linear);
+        TCout(7) == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.T_P_H, Pc(7), HCout(6), interpolation = linear);
+        TCout(8) == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.T_P_H, Pc(8), HCout(7), interpolation = linear);
+        TCout(9) == tablelookup(LeftC.P_P_H, LeftC.H_P_H, LeftC.T_P_H, Pc(8), HCout(8), interpolation = linear);
+
+        % CpC properties for calculation of T cold
+        CpC(1)   == tablelookup(LeftC.T_T_P, LeftC.P_T_P, LeftC.Cp_T_P, (TCout(1) + TCout(2))/2, Pc(1), interpolation=linear);
+        CpC(2)   == tablelookup(LeftC.T_T_P, LeftC.P_T_P, LeftC.Cp_T_P, (TCout(2) + TCout(3))/2, Pc(2), interpolation=linear);
+        CpC(3)   == tablelookup(LeftC.T_T_P, LeftC.P_T_P, LeftC.Cp_T_P, (TCout(3) + TCout(4))/2, Pc(3), interpolation=linear);
+        CpC(4)   == tablelookup(LeftC.T_T_P, LeftC.P_T_P, LeftC.Cp_T_P, (TCout(4) + TCout(5))/2, Pc(4), interpolation=linear);
+        CpC(5)   == tablelookup(LeftC.T_T_P, LeftC.P_T_P, LeftC.Cp_T_P, (TCout(5) + TCout(6))/2, Pc(5), interpolation=linear);
+        CpC(6)   == tablelookup(LeftC.T_T_P, LeftC.P_T_P, LeftC.Cp_T_P, (TCout(6) + TCout(7))/2, Pc(6), interpolation=linear);
+        CpC(7)   == tablelookup(LeftC.T_T_P, LeftC.P_T_P, LeftC.Cp_T_P, (TCout(7) + TCout(8))/2, Pc(7), interpolation=linear);
+        CpC(8)   == tablelookup(LeftC.T_T_P, LeftC.P_T_P, LeftC.Cp_T_P, (TCout(8) + TCout(9))/2, Pc(8), interpolation=linear);
+
+        Cpalu(1) == tablelookup(LeftH.Th_Tc, LeftH.Cpalum_Th_Tc, (THoutbs(1) + THoutbs(2) + TMoutbs(1) + TMoutbs(2) + TCoutbs(1) + TCoutbs(2))/6, interpolation=cubic);
+        Cpalu(2) == tablelookup(LeftH.Th_Tc, LeftH.Cpalum_Th_Tc, (THoutbs(2) + THoutbs(3) + TMoutbs(2) + TMoutbs(3) + TCoutbs(2) + TCoutbs(3))/6, interpolation=cubic);
+        Cpalu(3) == tablelookup(LeftH.Th_Tc, LeftH.Cpalum_Th_Tc, (THoutbs(3) + THoutbs(4) + TMoutbs(3) + TMoutbs(4) + TCoutbs(3) + TCoutbs(4))/6, interpolation=cubic);
+        Cpalu(4) == tablelookup(LeftH.Th_Tc, LeftH.Cpalum_Th_Tc, (THoutbs(4) + THoutbs(5) + TMoutbs(4) + TMoutbs(5) + TCoutbs(4) + TCoutbs(5))/6, interpolation=cubic);
+        Cpalu(5) == tablelookup(LeftH.Th_Tc, LeftH.Cpalum_Th_Tc, (THoutbs(5) + THoutbs(6) + TMoutbs(5) + TMoutbs(6) + TCoutbs(5) + TCoutbs(6))/6, interpolation=cubic);
+        Cpalu(6) == tablelookup(LeftH.Th_Tc, LeftH.Cpalum_Th_Tc, (THoutbs(6) + THoutbs(7) + TMoutbs(6) + TMoutbs(7) + TCoutbs(6) + TCoutbs(7))/6, interpolation=cubic);
+        Cpalu(7) == tablelookup(LeftH.Th_Tc, LeftH.Cpalum_Th_Tc, (THoutbs(7) + THoutbs(8) + TMoutbs(7) + TMoutbs(8) + TCoutbs(7) + TCoutbs(8))/6, interpolation=cubic);
+        Cpalu(8) == tablelookup(LeftH.Th_Tc, LeftH.Cpalum_Th_Tc, (THoutbs(8) + THoutbs(9) + TMoutbs(8) + TMoutbs(9) + TCoutbs(8) + TCoutbs(9))/6, interpolation=cubic);
+
+        Q1(1:8) == (THoutbs(1:8) + THoutbs(2:9) - TMoutbs(1:8) - TMoutbs(2:9))*hh_m/(2*N);
+        Q2(1:8) == (THoutbs(1:8) + THoutbs(2:9) - TCoutbs(1:8) - TCoutbs(2:9))*hh_c/(2*N);
+        Q3(1:8) == (TMoutbs(1:8) + TMoutbs(2:9) - TCoutbs(1:8) - TCoutbs(2:9))*hm_c/(2*N);
+
+        HHout(1:8).der == N*(RightH.M*([HHin;HHout(1:7)] - HHout(1:8)) + Qh)./(rhoH_H(1:8) * Vh + M*Cpalu(8:-1:1)./(2*CpH(1:8)));
+        HMout(1:8).der == N*(RightM.M*([HMin;HMout(1:7)] - HMout(1:8)) + Qm)./(rhoM_H(1:8) * Vm + M*Cpalu(8:-1:1)./(2*CpM(1:8))); 
+        HCout(1:8).der == N*(RightC.M*([HCin;HCout(1:7)] - HCout(1:8)) + Qc)./(rhoC_H(1:8) * Vc + M*Cpalu(8:-1:1)./(2*CpC(1:8)));
+
+       if(time<{10,'s'})
+            Cst == time/{10,'s'};
+       else
+            Cst == 1;
+       end
+
+        dmh(1:8) == 0*Cst*(rhoH_M(2:9) - rhoH_M(1:8))./(HHout(1:8) - [HHin;HHout(1:7)]) * Vh.* (RightH.M*([HHin;HHout(1:7)] - HHout(1:8)) - Q1(1:8) -    Q2(1:8))   ./(rhoH_H(1:8) * Vh + M*Cpalu(1:8)   ./(2*CpH(1:8)));
+        dmm(1:8) == 0*Cst*(rhoM_M(2:9) - rhoM_M(1:8))./(HMout(1:8) - [HMin;HMout(1:7)]) * Vm.* (RightM.M*([HMin;HMout(1:7)] - HMout(1:8)) - Q3(8:-1:1) + Q1(8:-1:1))./(rhoM_H(1:8) * Vm + M*Cpalu(8:-1:1)./(2*CpM(1:8)));        
+        dmc(1:8) == 0*Cst*(rhoC_M(2:9) - rhoC_M(1:8))./(HCout(1:8) - [HCin;HCout(1:7)]) * Vc.* (RightC.M*([HCin;HCout(1:7)] - HCout(1:8)) + Q2(8:-1:1) + Q3(8:-1:1))./(rhoC_H(1:8) * Vc + M*Cpalu(8:-1:1)./(2*CpC(1:8)));
+    end
+end

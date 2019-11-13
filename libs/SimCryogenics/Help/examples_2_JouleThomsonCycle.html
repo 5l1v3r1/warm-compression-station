@@ -1,0 +1,131 @@
+<html xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+      xsi:noNamespaceSchemaLocation="optional">
+    
+    <HEAD>
+        <TITLE>JoulesThomsonCycle</TITLE>
+        <META AUTHOR="Adrien Vassal"/>
+        <META COPYRIGHT="2015 PI-02"/>
+        <LINK REL="stylesheet" TYPE="text/css" HREF="doc.css"/>
+    </HEAD>   
+    
+    <body>
+        
+        <table class="header" width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+                <td bgcolor="#0099FF"><A href="FluidHelium.html"><font face="Arial" bgcolor="#0099FF" size="+0" underline="0" color="#000000"><b>Fluid helium 1.0</b></font></A></td>
+                <td width="36" bgcolor="#0099FF"><A HREF="examples_1_stationOfCompression.html"><IMG SRC="Images/leftarrow.png" BORDER="0" ALT="previous page"/></A><A HREF="examples_3_BraytonCycle.html"><IMG SRC="Images/rightarrow.png" BORDER="0" ALT="next page"/></A></td>
+            </tr>
+        </table>
+        
+        <h1><font face="Arial" size="+3" underline="0" color="#D16116">2. Joule Thompson cycle</font>&nbsp;<A href="FluidHelium.html"><img src="Images/uparrow.png" border="0" align="top" alt="Go back up one level"/></A></h1>
+        <p>  
+            <h2> a. Description </h2>
+            <p>                
+                In the Joules-Thomson cycle, a part of the helium cooled and
+                liquefy, for the use of the final client.
+                It's composed of :
+                <ul>
+                    <li>One cross current exchanger</li>
+                    <li>Three valves               </li>
+                    <li>One mixer                  </li>
+                    <li>Two pipes                  </li>
+                    <li>One pressure drop          </li>
+                    <li>One phase separator        </li>
+                </ul>
+                Note : only one of the two exchangers of the phase separator is 
+                used in this case.
+            </p>
+            <h2> b. Simulation </h2>
+            <p>
+                Here is the set of parameters that you could use for the 
+                simulation :
+                <h3> Nef </h3>
+                <p>
+                    <ul>
+                        <li>Number of elementary loop = 8                </li>
+                        <li>Hot pipe volume           = 2.3e-3 [m^3     ]</li>
+                        <li>Cold pipe volume          = 2.3e-3 [m^3     ]</li>
+                        <li>Mass of the aluminium     = 13     [kg      ]</li>
+                        <li>HP drop coefficient       = 0.6    [s*bar/kg]</li>
+                        <li>CP drop coefficient       = 0.35   [s*bar/kg]</li>
+                        <li>Exchange coefficient      = 480    [J/s/K   ]</li>
+                        <li>Initial hot pressure      = 16     [bar     ]</li>
+                        <li>Initial hot temperature   = 8      [K       ]</li>
+                        <li>Initial cold pressure     = 1.14   [bar     ]</li>
+                        <li>Initial cold temperature  = 4.5    [K       ]</li>
+                        <li>Initial hot mass flow     = 0.042  [kg/s    ]</li>
+                        <li>Initial clod mass flow    = 0.042  [kg/s    ]</li>                    
+                    </ul>
+                </p>
+                
+                <h3> Valve CV155</h3>
+                <p>
+                    <ul>
+                        <li>CVmax = 0.55 </li>
+                        <li>Rv    = 10   </li>
+                        <li>Xt    = 0.86 </li>                   
+                    </ul>
+                </p>
+                
+                <h3> Valve CV157</h3>
+                <p>
+                    <ul>
+                        <li>CVmax = 20 </li>
+                        <li>Rv    = 10   </li>
+                        <li>Xt    = 0.86 </li>                   
+                    </ul>
+                </p>
+                
+                <h3> Valve CV158</h3>
+                <p>
+                    <ul>
+                        <li>CVmax = 0.58 </li>
+                        <li>Rv    = 10   </li>
+                        <li>Xt    = 0.86 </li>                   
+                    </ul>
+                </p>
+                
+                <h3> Phase separator</h3>
+                <p>
+                    <ul>
+                        <li>Exchange coeff (exch 1)            = 0.58   [W/K]</li>
+                        <li>Ideal (exch 1)                     = 10          </li>
+                        <li>Delta T (exch 1)                   = 0.86   [K  ]</li>    
+                        <li>Number of elementary loop (exch 1) = 0.86        </li> 
+                        <li>Exchange coeff (exch 2)            = 0.58   [W/K]</li>
+                        <li>Ideal (exch 2)                     = 10          </li>
+                        <li>Delta T (exch 2)                   = 0.86   [K  ]</li>    
+                        <li>Number of elementary loop (exch 2) = 0.86        </li> 
+                        <li>Initial pressure                   = 1.15   [bar]</li>
+                        <li>Maximum heigh                      = 0.8    [m  ]</li>
+                        <li>Surface of the bath                = 0.1662 [m^2]</li>
+                        <li>Initial heigh                      = 60          </li>
+                    </ul>
+                </p>
+                <h3> Pressure drop</h3>
+                <p>
+                    <ul>
+                        <li>Kdrop = 5 [s^2*bar/kg^2]</li>
+                    </ul>
+                </p>
+                
+                <br/><br/>       
+                <center width="477" height="226" bgcolor="#0099FF" align="center">
+                    <img src="Images/examples_2_JouleThomsonCycle.png" border="0"/>
+                </center>  
+                <br/><br/>
+            </p>
+        </p>
+        
+        <table class="footer" width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+                <td width="18"  height="15" bgcolor="#0099FF" align="left"  ><a href="examples_1_stationOfCompression.html" ><img  src="images/leftarrow.png" border="0" alt="previous page"/></a></td>
+                <td width="40%" height="15" bgcolor="#0099FF" align="left"  ><a href="examples_1_stationOfCompression.html" ><font face="arial" bgcolor="#e4f0f8" size="normal" underline="0" color="#000000">1. Station of compression</font></a></td>
+                <td width="20%" height="15" bgcolor="#0099FF" align="center"><a href="FluidHelium.html" ><font face="arial" bgcolor="#e4f0f8" size="normal" underline="0" color="#000000">[Top]</font></a></td>
+                <td width="40%" height="15" bgcolor="#0099FF" align="right" ><a href="examples_3_BraytonCycle.html"><font face="arial" bgcolor="#e4f0f8" size="normal" underline="0" color="#000000">3. Brayton cycle</font></a></td>
+                <td width="18"  height="15" bgcolor="#0099FF" align="right" ><a href="examples_3_BraytonCycle.html"><img  src="images/rightarrow.png" border="0" alt="next page"/></a></td>
+            </tr>
+        </table>
+        <font face="Arial" bgcolor="#0099FF" size="normal" underline="0" color="#000000">&copy;2015 The PI-02</font>  
+    </body>
+</html>

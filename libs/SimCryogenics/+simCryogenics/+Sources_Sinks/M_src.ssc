@@ -1,0 +1,20 @@
+component M_src
+    % M src : fixed
+    %
+    % This block is a perfect mass flow rate source.
+    % It's imposed a constant mass flow regardless of the pressure and 
+    % temperature.
+    % The parameter of this component define the value of the mass flow,
+    % the unit of the mass flow is [kg/s].
+    nodes
+        M_src  = simCryogenics.fluid; % :right
+    end
+    
+    parameters
+        M = { 0.01, 'kg/s' }; % Flowrate
+    end
+    
+    equations
+        M_src.M == M;
+    end
+end

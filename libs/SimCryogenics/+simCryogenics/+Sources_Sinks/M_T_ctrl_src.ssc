@@ -1,0 +1,23 @@
+component M_T_ctrl_src
+    % M/T ctrl src : fixed
+    %
+    % This block is a perfect mass flow rate and temperature source.
+    % It's imposed a constant mass flow and temperature regardless of the pressure.
+    % The first input of this component define the value of the mass flow,
+    % the unit of the mass flow is [kg/s].
+    % The second input of this compoent define the value of the temperature,
+    % the unit of the temperature is [K].
+    inputs
+        M = { 0.01, 'kg/s'}; % M:left
+        T = { 8, 'K'}; % T:left
+    end
+    
+    nodes
+        M_T_src  = simCryogenics.fluid; % :right
+    end
+        
+    equations
+        M_T_src.M == M;
+        M_T_src.H == tablelookup(M_T_src.T_T_P, M_T_src.P_T_P, M_T_src.H_T_P, T, M_T_src.P, interpolation=linear);
+    end
+end

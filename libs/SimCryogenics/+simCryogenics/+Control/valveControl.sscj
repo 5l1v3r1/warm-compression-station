@@ -1,0 +1,64 @@
+component valveControl 
+    % valveControl : 2
+    %
+    % this is the help
+    
+    inputs
+        I  = { 0, '1'}; % I : right
+    end
+    
+    outputs
+        O = { 0, '1'}; % O : left
+    end
+     
+    parameters
+        % to bypass
+        Bypass       = { 1, '1' };    % Bypass block
+        
+        % for Quantization
+        Quantization = { 0.5, '1' };  % Quantization interval
+        
+        % c1 : valveSmallOpening
+        openingStart = { 2.0, '1' };  % Opening start
+
+        % c5 : constant_delay
+        InputHistory = { 0.0, '1' };  % Input history
+        DelayTime    = { 1.0, 's' };  % Delay time
+        
+        % c6 : saturation
+        upper_limit  = { 0.5, '1' };  % Upper limit
+        lower_limit  = {-0.5, '1' };  % Lower limit
+    end
+    
+    components (Hidden=true)
+        c1 = simCryogenics.Control.valveSmallOpening(openingStart=openingStart);
+        c2 = foundation.physical_signal.functions.gain(gain=1/Quantization);
+        c3 = foundation.physical_signal.nonlinear.round();
+        c4 = foundation.physical_signal.functions.gain(gain=Quantization);
+        c5 = simCryogenics.Control.delay(InputHistory=InputHistory, DelayTime=DelayTime);
+        c6 = foundation.physical_signal.nonlinear.saturation(upper_limit=upper_limit, lower_limit=lower_limit);
+        c7 = simCryogenics.Control.delay(InputHistory=InputHistory, DelayTime=DelayTime);
+        c8 = foundation.physical_signal.functions.subtract(T);
+        
+        c7 = foundation.physical_signal.nonlinear.controlled_switch(Threshold=0.5);
+    end
+        
+    connections
+        connect(I,c1.I,c7.I1);
+        connect(c1.O,c2.I);
+        connect(c2.O,c3.I);
+        connect(c3.O,c4.I);
+        connect(c4.O,c5.U);
+        connect(c5.Y,c6.I);  
+        connect(c6.O,c7.I3);
+        
+        
+        
+        connect(c7.O,O);
+    end
+    
+    equations
+       Bypass == c7.I2
+    end
+
+end

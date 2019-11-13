@@ -1,0 +1,35 @@
+component(Hidden=true) ba_breaker2
+    
+    nodes
+        in1  = simCryogenics.fluid; % IN:Left
+        out1 = simCryogenics.fluid; % OUT:Right
+    end
+        
+    parameters
+        T0 = { 5, 'K'}; % init temp
+        P0 = { 1, 'bar'}; % init pres
+        M0 = { 0.02, 'kg/s'}; % init flow
+    end
+    
+    variables (Access=private)
+        H = { 5, 'J/kg'}; % init temp
+        P = { 1, 'bar'}; % init pres
+        M = { 0.02, 'kg/s'}; % init flow
+    end
+    
+    function setup
+       H = {hecalc(9,0,'T',value(T0,'K'),'P',value(P0,'bar')*1e5,0),'J/kg'};
+       P = P0;
+       M = M0;
+    end
+    
+    equations 
+        H.der == (in1.H-H)/{1e-3,'s'};
+        P.der == (out1.P-P)/{1e-3,'s'};
+        M.der == (in1.M-M)/{1e-3,'s'};
+        
+        out1.H == H;
+        in1.P == P;
+        out1.M == M;
+    end
+end

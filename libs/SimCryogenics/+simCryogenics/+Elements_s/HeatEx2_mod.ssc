@@ -1,0 +1,169 @@
+component (Propagation=blocks) HeatEx2_mod 
+%     HX2_mod
+%
+%     This component is a two branches cross-current heat Exchanger
+%     
+%     The following variables are imposed to others components:
+%       - in1 node : flow rate
+%       - out1 node : pressure and enthalpy 
+%       - in2 node : enthalpy and flow rate
+%       - out2 node : pressure
+%     
+%     To ensure compilation, the heat Exchanger must be connected
+%     to components nodes that impose:
+%     - pressure and enthalpy on the in1 node
+%     - flowrate on the out1 node
+%     - flowrate and enthalpy on the in2 node
+%     - pressure on the out2 node
+%     
+%     Note : the initial temperature/flowrate/presure conditions should
+%     be equal to the actual value on the scheme (especially for heat
+%     exchangers connected to sources).
+%     
+%     All parameters must be positive
+    nodes        
+        out2 = simCryogenics.fluid; % out2:top
+        in1  = simCryogenics.fluid; % in1:top
+        in2  = simCryogenics.fluid; % in2:bottom
+        out1 = simCryogenics.fluid; % out1:bottom
+    end
+    
+    parameters
+        N   = { 1     , '1'       }; % Number of discrete elements
+        Vh  = { 2.3e-3, 'm^3'     }; % First passage volume
+        Vc  = { 2.3e-3, 'm^3'     }; % Sec. passage volume
+        M   = { 13    , 'kg'      }; % Heat exchanger mass
+        Kh  = { 0.6   , 'bar*s/kg'}; % First passage press. drop coeff.
+        Kc  = { 0.35  , 'bar*s/kg'}; % Sec. passage press. drop coeff.
+        Th0 = { 10    , 'K'       }; % Initial in1 temperature
+        Ph0 = { 16    , 'bar'     }; % Initial in1 pressure
+        Mh0 = { 0.037 , 'kg/s'    }; % Initial out1 flowrate   
+        Tc0 = { 4.5   , 'K'       }; % Initial in2 temperature
+        Pc0 = { 1.1   , 'bar'     }; % Initial out2 pressure
+        Mc0 = { 0.037 , 'kg/s'    }; % Initial in2 flowrate
+        hhn   = { 480   , 'J/s/K'   }; % Nominal exchange coefficient for hot pipe
+        hcn   = { 480   , 'J/s/K'   }; % Nominal exchange coefficient for cold pipe
+        Mhn = { 1, 'kg/s'}; % Nominal hot pipe flowrate
+        Mcn = { 1, 'kg/s'}; % Nominal cold pipe flowrate
+        Thn = { 10, 'K'}; % Nominal hot pipe temperature
+        Tcn = { 4.5, 'K'}; % Nominal cold pipe temperature
+        Phn = {16, 'bar'}; % Nominal hot pipe pressure
+        Pcn = {1.1, 'bar'}; % Nominal cold pipe pressure
+        ex_mode = {1, '1'}; % Choice for h computation 
+    end
+
+     components (Hidden=true)
+         e1 = simCryogenics.Elements_s.Tuy1D_mod(V=Vh, M=M/2, K=Kh, N=N, sens=0,Mn=Mhn, hn=hhn, ex_mode=ex_mode);
+         e2 = simCryogenics.Elements_s.Tuy1D_mod(V=Vc, M=M/2, K=Kc, N=N, sens=1,Mn=Mcn, hn=hcn, ex_mode=ex_mode);
+         q1 = simCryogenics.Elements_s.HeatEx2_exchange_mod(N=N);
+     end
+
+     function setup
+        if N < 1 || N > 10,
+            error('The number of elementary loop must be between 1 and 10');
+        end
+
+        if Vh <= 0 || Vc <= 0 || M < 0 || Kh < 0 || Kc < 0 || hhn < 0 || hcn < 0 
+            error('All component physical parameters must be positive');
+        end
+
+        if Ph0 < in1.P_min, error('Initial pressure of the first passage must be higher than P_min'); end
+        if Pc0 < in2.P_min, error('Initial pressure of the third passage must be higher than P_min'); end    
+        
+        if Ph0 > in1.P_max, error('Initial pressure of the first passage must be lower than P_max'); end
+        if Pc0 > in2.P_max, error('Initial pressure of the s passage must be lower than P_max'); end 
+
+        if Phn < in1.P_min, error('Nominal pressure of the first passage must be higher than P_min'); end
+        if Pcn < in2.P_min, error('Nominal pressure of the third passage must be higher than P_min'); end    
+        
+        if Phn > in1.P_max, error('Nominal pressure of the first passage must be lower than P_max'); end
+        if Pcn > in2.P_max, error('Nominal pressure of the s passage must be lower than P_max'); end 
+        
+        if Th0 < in1.T_min, error('Initial temperature of the first passage must be higher than T_min'); end
+        if Tc0 < in2.T_min, error('Initial temperature of the second passage must be higher than T_min'); end    
+        
+        if Th0 > in1.T_max, error('Initial temperature of the first passage must be lower than T_max'); end
+        if Tc0 > in2.T_max, error('Initial temperature of the second passage must be lower than T_max'); end    
+        
+        if Thn < in1.T_min, error('Nominal temperature of the first passage must be higher than T_min'); end
+        if Tcn < in2.T_min, error('Nominal temperature of the second passage must be higher than T_min'); end    
+        
+        if Thn > in1.T_max, error('Nominal temperature of the first passage must be lower than T_max'); end
+        if Tcn > in2.T_max, error('Nominal temperature of the second passage must be lower than T_max'); end
+        
+        if Mh0 < 0, error('Initial flowrate in the first passage must be greater than 0'); end        
+        if Mc0 < 0, error('Initial flowrate in the second passage must be greater than 0'); end  
+        
+        if Mhn < 0, error('Nominal flowrate in the first passage must be greater than 0'); end        
+        if Mcn < 0, error('Nominal flowrate in the second passage must be greater than 0'); end 
+        
+        % Calcul T0 - Initial temperature
+        f0 = @(Tt0)ex_multizone_conti_centree_der(  value(Th0,'K'),...
+                                                    value(Tc0,'K'),...
+                                                    value(Mh0,'kg/s'),...
+                                                    value(Mc0,'kg/s'),...
+                                                    value(Ph0,'bar'),...
+                                                    value(Pc0,'bar'),...
+                                                    value(N,'1'),...
+                                                    value(Vh,'m^3'),...
+                                                    value(Vc,'m^3'),...
+                                                    value(1/(1/hhn+1/hcn),'W/K'),...
+                                                    value(M,'kg'),...
+                                                    value(in1.gas,'1'),...
+                                                    value(in2.gas,'1'), Tt0 );
+                                        
+        T0(1:2:2*value(N,'1'),1) = linspace(value(Th0,'K')  ,value(Tc0,'K')+0.5,value(N,'1'))'; % init guess Th
+        T0(2:2:2*value(N,'1'),1) = linspace(value(Th0,'K')-1,value(Tc0,'K')    ,value(N,'1'))'; % init guess Tc  
+        
+        opt = optimset('Display','off','TolFun',1e-10,'TolX',1e-10);
+        T0   = fsolve(f0,T0,opt);                                             
+
+        % Calcul Tn - Nominal temperature
+        fn = @(Ttn)ex_multizone_conti_centree_der(  value(Thn,'K'),...
+                                                    value(Tcn,'K'),...
+                                                    value(Mhn,'kg/s'),...
+                                                    value(Mcn,'kg/s'),...
+                                                    value(Phn,'bar'),...
+                                                    value(Pcn,'bar'),...
+                                                    value(N,'1'),...
+                                                    value(Vh,'m^3'),...
+                                                    value(Vc,'m^3'),...
+                                                    value(1/(1/hhn+1/hcn),'W/K'),...
+                                                    value(M,'kg'),...
+                                                    value(in1.gas,'1'),...
+                                                    value(in2.gas,'1'), Ttn );
+                                        
+        Tn(1:2:2*value(N,'1'),1) = linspace(value(Thn,'K')  ,value(Tcn,'K')+0.5,value(N,'1'))'; % init guess Th
+        Tn(2:2:2*value(N,'1'),1) = linspace(value(Thn,'K')-1,value(Tcn,'K')    ,value(N,'1'))'; % init guess Tc  
+        
+        Tn = fsolve(fn,Tn,opt);
+        
+        Houtn1 = {[T_P_to_H(Tn(1:+2:end),value(Phn,'bar'),value(in1.gas,'1')); zeros(10-value(N,'1'),1)], 'J/kg'};
+        Houtn2 = {[T_P_to_H(Tn(end:-2:1),value(Pcn,'bar'),value(in2.gas,'1')); zeros(10-value(N,'1'),1)], 'J/kg'};
+        
+        e1.Hout0  = {[T_P_to_H(T0(1:+2:end),value(Ph0,'bar'),value(in1.gas,'1')); zeros(10-value(N,'1'),1)], 'J/kg'};
+        e2.Hout0  = {[T_P_to_H(T0(end:-2:1),value(Pc0,'bar'),value(in2.gas,'1')); zeros(10-value(N,'1'),1)], 'J/kg'};        
+       
+        e1.Prn  = {H_P_to_Pr(value(Houtn1,'J/kg'),value(Phn,'bar'),value(in1.gas,'1')), '1'};
+        e2.Prn  = {H_P_to_Pr(value(Houtn2,'J/kg'),value(Pcn,'bar'),value(in2.gas,'1')), '1'};
+        
+        e1.Cpn  = {H_P_to_Cp(value(Houtn1,'J/kg'),value(Phn,'bar'),value(in1.gas,'1')), 'J/(kg*K)'};
+        e2.Cpn  = {H_P_to_Cp(value(Houtn2,'J/kg'),value(Pcn,'bar'),value(in2.gas,'1')), 'J/(kg*K)'};
+
+        e1.mun  = {H_P_to_mu(value(Houtn1,'J/kg'),value(Phn,'bar'),value(in1.gas,'1')), 'kg/(m*s)'};
+        e2.mun  = {H_P_to_mu(value(Houtn2,'J/kg'),value(Pcn,'bar'),value(in2.gas,'1')), 'kg/(m*s)'};   
+
+     end
+     
+     connections
+        connect(in1, e1.in1);	connect(e1.out1, out1);
+        connect(out2, e2.out1);	connect(e2.in1, in2); 
+        connect(q1.Q1, e1.Q);
+        connect(q1.Q2, e2.Q);
+       	connect(e1.T, q1.T1);
+        connect(e2.T, q1.T2);
+        connect(e1.h, q1.hh);
+        connect(e2.h, q1.hc);
+     end
+    
+end

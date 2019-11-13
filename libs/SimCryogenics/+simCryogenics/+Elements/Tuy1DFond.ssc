@@ -1,0 +1,75 @@
+component (Hidden=true) Tuy1DFond
+%     Tuy1DFond 
+    nodes        
+        in1  = simCryogenics.fluid; % in:left
+        out1 = simCryogenics.fluid; % out:right
+    end
+    
+    inputs
+        Q = { zeros(1,1), 'W'};
+    end
+    
+    outputs
+        T  = { zeros(1,1), 'K'};
+    end
+   
+     parameters
+        V =     { 2.3e-3, 'm^3'         }; % Pipe volume
+        M =     { 13    , 'kg'          }; % Aluminium mass
+        K =     { 0     , 'bar*s/kg'    }; % Pressure drop coef.
+        sens =  { 0     , '1'           }; % Fluid direction
+        act =   { 0     , '1'           }; % Active portion
+        Hout0 = { 50    , 'kJ/kg'       }; % hout0
+        Hin0 =  { 50    , 'kJ/kg'       }; % hin0
+     end
+    
+    variables 
+        rhoH_H  = { zeros(1,1), 'kg/m^3'};
+        THout  = { zeros(2,1), 'K'};
+        CpH    = { zeros(1,1), 'J/kg/K'};
+        Hout  = { 50   , 'kJ/kg'}; % Drop in the hot pipe
+        Hin   = { 50   , 'kJ/kg'}; % Drop in the hot pipe
+        Cpalu   = { zeros(1,1), 'J/kg/K'};
+    end
+    
+    function setup
+        Hout = Hout0;
+    end
+
+    equations
+        
+        if act == 1 
+            Hin == in1.H;
+            out1.H == Hout;
+            Hout.der == (in1.M*(Hin - Hout) + Q)/(rhoH_H*V + M*Cpalu/CpH);
+            out1.P == in1.P - K*in1.M;
+            
+            % rhoH properties for the calculation of H hot
+            rhoH_H  == tablelookup(in1.P_P_H, in1.H_P_H, in1.rho_P_H , in1.P, (Hin + Hout)/2, interpolation=linear, extrapolation=nearest);
+
+            % THout properties for the calculation of Q
+            THout(1) == tablelookup(in1.P_P_H, in1.H_P_H, in1.T_P_H, in1.P, Hin,  interpolation=linear, extrapolation=nearest);
+            THout(2) == tablelookup(in1.P_P_H, in1.H_P_H, in1.T_P_H, in1.P, Hout, interpolation=linear, extrapolation=nearest);
+
+            % CpH properties for calculation of H hot
+            CpH   == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P  , (THout(1) + THout(2))/2, in1.P, interpolation=linear, extrapolation=nearest);
+
+            Cpalu == tablelookup(in1.Th_Tc, in1.Cpalum_Th_Tc,(THout(1) + THout(2))/2, interpolation=linear, extrapolation=nearest);
+        else
+            in1.H == out1.H;
+            Hin == Hout;
+            Hout.der == 0;
+            out1.P == in1.P;
+           
+            rhoH_H  == 0;
+            THout(1) == 0;
+            THout(2) == 0;
+            CpH   == 0;
+            Cpalu == 0;
+        end
+        
+        out1.M == in1.M;
+        
+        T == (THout(1) + THout(2))/2;
+    end
+end

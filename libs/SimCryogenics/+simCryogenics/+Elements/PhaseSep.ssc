@@ -1,0 +1,85 @@
+component (Propagation=blocks) PhaseSep
+    % PhaseSep : 2
+    %
+    % This component is a phase separator including two heat exchangers.
+    % 
+    % About the phase separator: Ports marked as outlets are imposing impose both pressure and enthalpy and must 
+    % be connected to a component node that impose flowrate to ensure compilation.
+    % Port marked as inlet are imposing pressure and must be connected to a component 
+    % node that impose both enthalpy and flow rate (such as a valve outlet). 
+    %
+    % About the heat exchangers: inlets ports impose flowrate and must be connected to a 
+    % component port that impose both enthalpy and pressure. Outlets ports 
+    % impose both enthalpy and pressure and must be connected to a component 
+    % port that impose the flowrate.
+    %
+    % All parameters must be positive. 
+
+	nodes
+        bathOutGaz  = simCryogenics.fluid; %outG:top
+        bathOutLiq  = simCryogenics.fluid; %outL:bottom
+        exchIn1     = simCryogenics.fluid; %in1:top
+        exchOut1    = simCryogenics.fluid; %out1:bottom
+        exchIn2     = simCryogenics.fluid; %in2:top
+        exchOut2    = simCryogenics.fluid; %out2:bottom
+        bathIn      = simCryogenics.fluid; %inM:top
+    end
+    
+    inputs
+        Q3  = { 0, 'W'}; % Q:bottom
+    end
+    
+    outputs
+        X = { 0, '1'}; % x:top
+        h = { 0, '1'}; % h:bottom
+    end
+    
+    parameters
+        % Parameter of the immersed exchanger 1
+        Ideal1   = { 1, '1'     }; % Ideal 1/0 
+        DeltaT1  = { 0.05, 'K'  }; % Delta T
+        N1       = { 10, '1'    }; % Number of discrete elements
+        h1       = { 400, 'W/K' }; % Exchange coefficient
+
+        % Parameter of the immersed exchanger 2
+        Ideal2   = { 1, '1'  	}; % Ideal : 0/1
+        DeltaT2  = { 0.05, 'K'  }; % Delta T
+        N2       = { 10, '1'    }; % Number of discrete elements
+        h2       = { 400, 'W/K' }; % Exchange coefficient
+        
+        % Parameter of the bath
+        hmax  = { 1.5, 'm'  }; % Bath height
+        S     = { 0.2, 'm^2'}; % Surface
+        P0    = { 1.2, 'bar'}; % Initial pressure
+        h0    = { 50, '1'   }; % Initial liquid height
+        T0    = { 4.5, 'K'  }; % Initial bath temperature
+    end
+    
+    components (Hidden=true)
+        s1 = simCryogenics.Elements.serpentin(Ideal=Ideal1, DeltaT=DeltaT1, N=N1, hex=h1 );
+        s2 = simCryogenics.Elements.serpentin(Ideal=Ideal2, DeltaT=DeltaT2, N=N2, hex=h2 );
+        ps = simCryogenics.Elements.PhaseSepEq(hmax=hmax, S=S, P0=P0, h0=h0, T0=T0);
+    end
+        
+    connections
+        connect(exchIn1,  s1.in1);
+        connect(exchOut1, s1.out1);
+        connect(exchIn2,  s2.in1);
+        connect(exchOut2, s2.out1);
+        
+        connect(bathOutGaz, ps.bathOutGaz);
+        connect(bathOutLiq, ps.bathOutLiq);
+        connect(bathIn, ps.bathIn);
+        
+        connect(s1.Qout,ps.Q1)
+        connect(s2.Qout,ps.Q2)
+        connect(Q3,ps.Q3)
+        
+        connect(ps.T,s1.Text,s2.Text)
+        connect(ps.h,s1.h,s2.h)
+        
+        connect(ps.X,X)
+        connect(ps.h,h)
+    end
+
+end

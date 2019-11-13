@@ -1,0 +1,23 @@
+component P_T_src
+    % P/T src : fixed
+    %
+    % This block is a perfect pressure and temperature source.
+    % It's imposed a constant pressure and temperature regardless of the mass flow.
+    % The first argument of this component define the value of the pressure,
+    % the unit of the mass flow is [bar].
+    % The second argument of this compoent define the value of the temperature,
+    % the unit of the temperature is [K].
+    nodes
+        P_T_src  = simCryogenics.fluid; % :right
+    end
+    
+    parameters
+        P = { 1  , 'bar'}; % Pressure [bar]
+        T = { 300, 'K'  }; % Temperature [K]
+    end
+
+    equations
+        P_T_src.P == P;
+        P_T_src.H == tablelookup(P_T_src.T_T_P, P_T_src.P_T_P, P_T_src.H_T_P, T, P, interpolation=linear); 
+    end
+end

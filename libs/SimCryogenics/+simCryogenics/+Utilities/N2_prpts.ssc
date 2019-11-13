@@ -1,0 +1,131 @@
+component (Propagation=source) N2_prpts 
+    % N2_prpts : 1 : fixed 
+    %
+    % The block controls fluidHelium domain properties for the attached
+    % circuit.
+    %
+    % You must have one of this block connectiong to your circuit
+    %
+    % For a good use of this component you must respect the following point :
+    %
+    % - All the parameters have to be greater than 0
+    %
+    % - Minimum parameters have to be lower than maximum parameters
+    %
+    % - If you use a very large scale (ie Min << Max), the precision of this component may decline
+    
+    parameters
+        P_min   = { 0.5         , 'bar'            }; % Minimum allowable pressure
+        T_min   = { 70          , 'K'              }; % Minimum allowable temperature
+        T_max   = { 320         , 'K'              }; % Maximum allowable temperature
+        P_max   = { 20          , 'bar'            }; % Maximum allowable pressure
+    end
+    
+    parameters(Hidden=true)
+        Mol     = { 4.0026*10^-3, 'kg/mol'         }; % Molar mass of the fluid (here helium)
+    end
+    
+    nodes
+        A = simCryogenics.fluid % : right
+    end
+    
+    function setup
+    
+        if T_min >= T_max
+            error('You  must have T_min < T_max');
+        elseif T_min <= 0
+            error('T_min must be greater than 0');
+        end
+
+        if P_min >= P_max
+            error('You  must have P_min < P_max');
+        elseif P_min <= 0
+            error('P_min must be greater than 0');
+        end
+        
+        A.gas = {1,'1'};
+     
+        load('n2p.mat');
+        
+        % Parametrable helium properties
+        A.T_min   = T_min;
+        A.P_min   = P_min;
+        A.T_max   = T_max;
+        A.P_max   = P_max;
+        A.Mol     = Mol;
+
+        A.T_T_P   = {T_T_P, 'K'  }; % from T_min  to T_max
+        A.P_T_P   = {P_T_P, 'bar'}; % from P_in   to P_max
+
+        A.H_min   = {H_min,'J/kg'}; 
+        A.S_min   = {S_min,'J/kg'}; 
+        A.rho_min = {rho_min,'kg/m^3'};
+        A.u_min   = {u_min,'J/kg'}; 
+        
+        A.H_max   = {H_max,'J/kg'}; 
+        A.S_max   = {S_max,'J/kg'};  
+        A.rho_max = {rho_max,'kg/m^3'};
+        A.u_max   = {u_max,'J/kg'}; 
+        
+        A.R       = {8.3144621,'J/mol/K'}; % change
+        
+        % helium properties with T and P inputs
+        A.H_T_P   = {H, 'J/kg'   }; % enthalpy 
+        A.Cp_T_P  = {Cp, 'J/kg/K' }; % specific heat
+
+        % helium properties with P and H inputs
+        A.P_P_H = {P_P_H, 'bar' }; % from P_in to P_max
+        A.H_P_H = {H_P_H, 'J/kg'}; % from H_min  to H_max
+        
+        
+        A.X_P_H     = {X_P_H, '1'};
+        A.T_P_H     = {T_P_H, 'K'};
+        A.rho_P_H   = {rho_P_H, 'kg/m^3'};
+        A.Z_P_H     = {Z_P_H, '1'};
+        A.S_P_H     = {S_P_H, 'J/kg'};
+        A.Cp_P_H    = {Cp_P_H, 'J/kg/K'};
+        A.gamma_P_H = {gamma_P_H, '1'};
+
+   
+        % helium properties with u and rho inputs
+        A.u_u_rho   = {u_u_rho, 'J/kg'  }; % from u_min   to u_max
+        A.rho_u_rho = {rho_u_rho, 'kg/m^3'}; % from rho_min to rho_max
+
+        A.X_u_rho   = {X_u_rho, '1' };
+        A.P_u_rho   = {P_u_rho, 'Pa' };
+        A.T_u_rho   = {T_u_rho,  'K' };
+        A.H_u_rho   = {H_u_rho,  'J/kg' };
+
+        %helium properties with P and S inputs
+        A.P_P_S = {logspace(log10(value(A.P_min, 'bar'   )), log10(value(A.P_max, 'bar'   )),  100), 'bar'   }; % from P_in  to P_max
+        A.S_P_S = {logspace(log10(value(A.S_min, 'kJ/kg')), log10(value(A.S_max, 'kJ/kg')),  100), 'kJ/kg'}; % from S_min to S_max
+ 
+        A.H_P_S = {1e-3*hecalc(9, 0, 'P', value(A.P_P_S, 'Pa')', 8, value(A.S_P_S, 'J/kg'), 0), 'kJ/kg'}; % entropy
+% 
+%         % helium properties with T and rho inputs
+        A.T_T_rho      = {logspace(log10(value(A.T_min,   'K'     )), log10(value(A.T_max,   'K'     )), 100), 'K'     }; % from T_min   to T_max
+        A.rho_T_rho    = {logspace(log10(value(A.rho_min, 'kg/m^3')), log10(value(A.rho_max, 'kg/m^3')), 100), 'kg/m^3'}; % from rho_min to rho_max
+
+        A.H_T_rho      = {1e-3*hecalc(9,  0, 'T', value(A.T_T_rho, 'K')', 3, value(A.rho_T_rho, 'kg/m^3'), 0), 'kJ/kg'}; % enthalpy
+
+        % helium properties with SV and P inputs
+        A.P_SV_P  = {P_SV_P, 'bar'}; % from P_min to P_max
+        A.HG_SV_P  = {HG_SV_P, 'J/kg'}; % enthalpy
+        A.T_SV_P   = {T_SV_P, 'K'}; % temperature
+        
+        % helium properties with SL and P inputs
+        A.P_SL_P  = {P_SL_P, 'bar'}; % from P_min to P_max
+        A.HL_SL_P  = {HL_SL_P, 'J/kg'}; % enthalpy
+        
+        % helium properties with P and X inputs
+        A.P_P_X  = {P_P_X, 'bar'}; % from P_min to P_max
+        A.X_P_X  = {X_P_X, '1'}; % from 0 to 1
+        
+        A.H_P_X   = {H_P_X, 'J/kg'}; % enthalpy
+        
+        % Aluminium properties with Thot and Tcold inputs
+        A.Th_Tc = {logspace(log10(value(A.T_min, 'K'  )), log10(value(A.T_max, 'K'  )), 100), 'K'}; % from T_min  to T_max
+        
+        A.Cpalum_Th_Tc = {1e-3*alcalc(value(A.Th_Tc,'K')),'kJ/kg/K'};        
+    end
+end

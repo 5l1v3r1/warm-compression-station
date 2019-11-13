@@ -1,0 +1,17 @@
+component TT
+    % TT : 2 : fixed
+    %
+    % This component is a perfect temperature sensor
+    %
+    nodes
+        in1 = simCryogenics.fluid; % : Left
+    end
+    
+    outputs
+        TT = { 0, 'K'}; % : Right
+    end
+    
+    equations
+        TT == tablelookup(in1.P_P_H, in1.H_P_H, in1.T_P_H, in1.P, in1.H, interpolation=linear);    
+    end
+end

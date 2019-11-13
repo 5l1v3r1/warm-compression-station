@@ -1,0 +1,17 @@
+component FT
+    % FT : 2 : fixed
+    %
+    % This component is a perfect flow sensor    
+    %
+    nodes
+        in1 = simCryogenics.fluid; % : Left
+    end
+    
+    outputs
+        FT = { 0, 'kg/s'}; % : Right
+    end
+    
+    equations
+        FT == in1.M;
+    end
+end

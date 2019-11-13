@@ -1,0 +1,17 @@
+component PT
+    % PT : 2 : fixed
+    %
+    % This component is a perfect pressure sensor
+    %
+    nodes
+        in1 = simCryogenics.fluid; % : Left
+    end
+    
+    outputs
+        PT = { 0, 'bar'}; % : Right
+    end
+    
+    equations
+        PT == in1.P;
+    end
+end

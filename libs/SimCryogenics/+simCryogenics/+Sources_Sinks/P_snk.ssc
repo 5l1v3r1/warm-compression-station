@@ -1,0 +1,20 @@
+component P_snk
+    % P snk : fixed
+    %
+    % This block is a perfect pressure sink.
+    % It's imposed a constant pressure regardless of the mass flow and 
+    % the temperature.
+    % The parameter of this component define the value of the pressure,
+    % the unit of the pressure is [bar].
+    nodes
+        P_snk  = simCryogenics.fluid; % :right
+    end
+    
+    parameters
+        P = { 0, 'bar' }; % Pressure
+    end
+    
+    equations
+        P_snk.P == P;
+    end
+end

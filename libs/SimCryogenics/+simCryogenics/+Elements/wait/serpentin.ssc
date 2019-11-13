@@ -1,0 +1,142 @@
+component (Hidden=true)serpentin
+    % serpentin
+    
+    nodes
+        in1  = simCryogenics.fluid; % in:left
+        out1 = simCryogenics.fluid; % out:right
+    end
+    
+    inputs
+        Text = { 5, 'K'       }; % temeperature
+    end
+    
+    outputs
+        Qout = { 5, 'W'       }; % p
+    end
+    
+    parameters
+        Ideal   = { 1,    '1'   }; % Ideal 1/0 
+        DeltaT  = { 0.05, 'K'   }; % Delta T
+        N       = { 10,   '1'   }; % Number of discrete elements
+        h       = { 400,  'W/K' }; % Exchange coefficient
+    end
+    
+    variables
+        Cp   = { zeros(10,1), 'kJ/kg/K' }; % specific heat
+        T    = { zeros(10,1), 'K'       }; % temeperature
+        Tin  = { 0,           'K'       }; % Input temperature exchanger
+    end
+    
+    equations
+        
+        in1.M  == out1.M;
+        out1.P  == in1.P;
+        
+        Qout == out1.M*(in1.H - out1.H);
+        
+       % Immersed exchanger 1 equations
+        Tin      == tablelookup(in1.P_P_H, in1.H_P_H, in1.T_P_H, in1.P, in1.H, interpolation=linear, extrapolation=nearest);
+        T(1:10)  == ([Tin;T(1:9)] .* (in1.M * Cp(1:10) - h/(2*N)) + T * (h/N))./(in1.M * Cp(1:10) +h/(2*N));
+        
+
+        % Perfect case exchanger 1
+        if Ideal == 1
+            % Vector implementation not allowed by the compiler(Matlab R2014b)
+            Cp(1)==0;Cp(2)==0;Cp(3)==0;Cp(4)==0;Cp(5)==0;Cp(6)==0;Cp(7)==0;Cp(8)==0;Cp(9)==0;Cp(10)==0;
+            out1.H == tablelookup(out1.T_T_P, out1.P_T_P, out1.H_T_P, Text + DeltaT, out1.P, interpolation=linear, extrapolation=nearest);
+        % Non perfect case exchanger 1
+        else
+            if N == 1
+                Cp(1)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, Tin , in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(2)==0;Cp(3)==0;Cp(4)==0;Cp(5)==0;Cp(6)==0;Cp(7)==0;Cp(8)==0;Cp(9)==0;Cp(10)==0;
+                out1.H == tablelookup(out1.T_T_P, out1.P_T_P, out1.H_T_P, T(1), out1.P, interpolation=linear, extrapolation=nearest);
+                
+            elseif N == 2
+                Cp(1)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, Tin , in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(2)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(1), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(3)==0;Cp(4)==0;Cp(5)==0;Cp(6)==0;Cp(7)==0;Cp(8)==0;Cp(9)==0;Cp(10)==0;
+                out1.H == tablelookup(out1.T_T_P, out1.P_T_P, out1.H_T_P, T(2), out1.P, interpolation=linear, extrapolation=nearest);
+                
+            elseif N == 3
+                Cp(1)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, Tin , in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(2)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(1), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(3)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(2), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(4)==0;Cp(5)==0;Cp(6)==0;Cp(7)==0;Cp(8)==0;Cp(9)==0;Cp(10)==0;
+                out1.H == tablelookup(out1.T_T_P, out1.P_T_P, out1.H_T_P, T(3), out1.P, interpolation=linear, extrapolation=nearest);
+                
+            elseif N == 4
+                Cp(1)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, Tin , in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(2)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(1), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(3)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(2), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(4)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(3), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(5)==0;Cp(6)==0;Cp(7)==0;Cp(8)==0;Cp(9)==0;Cp(10)==0;
+                out1.H == tablelookup(out1.T_T_P, out1.P_T_P, out1.H_T_P, T(4), out1.P, interpolation=linear, extrapolation=nearest);
+                
+            elseif N == 5
+                Cp(1)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, Tin , in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(2)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(1), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(3)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(2), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(4)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(3), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(5)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(4), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(6)==0;Cp(7)==0;Cp(8)==0;Cp(9)==0;Cp(10)==0;
+                out1.H == tablelookup(out1.T_T_P, out1.P_T_P, out1.H_T_P, T(5), out1.P, interpolation=linear, extrapolation=nearest);
+                
+            elseif N == 6
+                Cp(1)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, Tin , in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(2)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(1), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(3)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(2), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(4)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(3), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(5)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(4), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(6)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(5), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(7)==0;Cp(8)==0;Cp(9)==0;Cp(10)==0;
+                out1.H == tablelookup(out1.T_T_P, out1.P_T_P, out1.H_T_P, T(6), out1.P, interpolation=linear, extrapolation=nearest);
+            elseif N == 7
+                Cp(1)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, Tin , in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(2)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(1), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(3)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(2), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(4)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(3), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(5)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(4), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(6)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(5), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(7)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(6), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(8)==0;Cp(9)==0;Cp(10)==0;
+                out1.H == tablelookup(out1.T_T_P, out1.P_T_P, out1.H_T_P, T(7), out1.P, interpolation=linear, extrapolation=nearest);
+            elseif N == 8
+                Cp(1)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, Tin , in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(2)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(1), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(3)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(2), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(4)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(3), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(5)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(4), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(6)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(5), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(7)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(6), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(8)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(7), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(9)==0;Cp(10)==0;
+                out1.H == tablelookup(out1.T_T_P, out1.P_T_P, out1.H_T_P, T(8), out1.P, interpolation=linear, extrapolation=nearest);
+            elseif N == 9
+                Cp(1) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, Tin , in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(2) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(1), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(3) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(2), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(4) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(3), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(5) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(4), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(6) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(5), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(7) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(6), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(8) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(7), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(9) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(8), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(10)==0;
+                out1.H == tablelookup(out1.T_T_P, out1.P_T_P, out1.H_T_P, T(9), out1.P, interpolation=linear, extrapolation=nearest);
+            else
+                Cp(1) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, Tin , in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(2) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(1), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(3) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(2), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(4) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(3), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(5) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(4), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(6) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(5), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(7) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(6), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(8) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(7), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(9) == tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(8), in1.P, interpolation=linear, extrapolation=nearest);
+                Cp(10)== tablelookup(in1.T_T_P, in1.P_T_P, in1.Cp_T_P, T(9), in1.P, interpolation=linear, extrapolation=nearest);
+                out1.H == tablelookup(out1.T_T_P, out1.P_T_P, out1.H_T_P, T(10), out1.P, interpolation=linear, extrapolation=nearest);
+            end
+        end
+        
+    end
+end

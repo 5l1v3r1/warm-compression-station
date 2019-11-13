@@ -1,0 +1,76 @@
+component(Hidden=true) HeatEx3_exchange_011_mod
+    % HeatEx3_exchange_011_mod
+    
+    inputs
+        T1 = {zeros(10,1), 'K'};
+        T2 = {zeros(10,1), 'K'};
+        T3 = {zeros(10,1), 'K'};
+        
+        hh = {ones(10,1), 'W/K'};
+        hm = {ones(10,1), 'W/K'};
+        hc = {ones(10,1), 'W/K'};
+    end
+     
+    outputs
+        Qh = {zeros(10,1), 'W'};
+        Qm = {zeros(10,1), 'W'};
+        Qc = {zeros(10,1), 'W'};
+    end
+    
+    parameters
+        ex_hp_bp = { 10   , '1'    }; 
+        ex_hp_mp = { 10   , '1'    }; 
+        ex_mp_bp = { 10   , '1'    }; 
+        
+        N = {1,'1'};
+        padW = {zeros(1,1), 'W'};
+        padH = {zeros(1,1), 'W/K'};
+        unit  = {zeros(1,1), '1'};
+        epsilon = {1, 'W/K'};
+        
+        r_hp_bp = {1,'1'};  
+        r_hp_mp = {1,'1'};
+        r_mp_hp = {1,'1'};
+        r_mp_bp = {1,'1'};
+        r_bp_hp = {1,'1'};
+        r_bp_mp = {1,'1'};
+    end
+    
+    variables
+        h_hm = {zeros(10,1), 'W/K'};
+        h_hc = {zeros(10,1), 'W/K'};
+        h_mc = {zeros(10,1), 'W/K'};
+    end
+    
+    function setup
+        if (N == 10)
+            padW = {[], 'W'};
+            padH = {[], 'W/K'};
+        else
+            padW = {zeros(10-N,1), 'W'};
+            padH = {zeros(10-N,1), 'W/K'};
+        end
+        
+        unit = ones(N,1);
+        epsilon = {unit*1e-6,'W/K'};
+       
+        r_hp_bp = ex_hp_bp/(ex_hp_bp+ex_hp_mp);
+        r_hp_mp = ex_hp_mp/(ex_hp_mp+ex_hp_bp);
+        
+        r_mp_hp = ex_hp_mp/(ex_hp_mp+ex_mp_bp);
+        r_mp_bp = ex_mp_bp/(ex_mp_bp+ex_hp_mp);
+        
+        r_bp_hp = ex_hp_bp/(ex_hp_bp+ex_mp_bp);
+        r_bp_mp = ex_mp_bp/(ex_mp_bp+ex_hp_bp);
+    end
+    
+    equations
+        h_hm == [unit./((unit./(r_hp_mp.*(hh(1:+1:N)+epsilon)))+(unit./(r_mp_hp.*(hm(N:-1:1)+epsilon)))); padH];
+        h_hc == [unit./((unit./(r_hp_bp.*(hh(1:+1:N)+epsilon)))+(unit./(r_bp_hp.*(hc(N:-1:1)+epsilon)))); padH];
+        h_mc == [unit./((unit./(r_mp_bp.*(hm(N:-1:1)+epsilon)))+(unit./(r_bp_mp.*(hc(N:-1:1)+epsilon)))); padH];
+
+        Qh == [-(T1(1:+1:N) - T2(N:-1:1)).*h_hm(1:N)/N - (T1(1:+1:N) - T3(N:-1:1)).*h_hc(1:N)/N; padW];
+        Qm == [+(T1(N:-1:1) - T2(1:+1:N)).*h_hm(1:N)/N - (T2(1:+1:N) - T3(1:+1:N)).*h_mc(1:N)/N; padW];    
+        Qc == [+(T1(N:-1:1) - T3(1:+1:N)).*h_hc(1:N)/N + (T2(1:+1:N) - T3(1:+1:N)).*h_mc(1:N)/N; padW];
+    end
+end

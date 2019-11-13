@@ -1,0 +1,36 @@
+component PressureDrop
+    % Pressure drop : 2
+    %
+    % For a good use of this component you must respect the following point :
+    %
+    % - Connect the in1 of the PressureDrop block to a component that provied 
+    % Temperature and pressure (not the mass flow)
+    %
+    %- Connect the out1 of the PressureDrop block to a component that provied
+    % the Pressure (not the mass flow neiter the temperature) 
+    nodes
+        in1  = simCryogenics.fluid; % in1:Left
+        out1 = simCryogenics.fluid; % out1:Right
+    end
+    
+    parameters
+        K = {1,'s*bar/kg'}; % Loss coefficient
+    end
+    
+%     variables
+%         T = { 0, 'K'};
+%     end
+    
+    equations
+%         T      == tablelookup(in1.P_P_H, in1.H_P_H, in1.T_P_H, in1.P, in1.H, interpolation = linear);
+%         out1.H == tablelookup(out1.T_T_P, out1.P_T_P, out1.H_T_P, T, out1.P, interpolation = linear);
+        out1.H == in1.H;
+        out1.M == in1.M;
+        
+        if (in1.P-out1.P) <= 0
+            out1.M == 0;
+        else
+            out1.M == ((in1.P-out1.P)/K);
+        end
+    end
+end

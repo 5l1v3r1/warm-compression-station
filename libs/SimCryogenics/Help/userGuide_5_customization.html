@@ -1,0 +1,206 @@
+<html xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+      xsi:noNamespaceSchemaLocation="optional">
+    
+    <HEAD>
+        <TITLE>customization</TITLE>
+        <META AUTHOR="Adrien Vassal"/>
+        <META COPYRIGHT="2015 PI-02"/>
+        <LINK REL="stylesheet" TYPE="text/css" HREF="doc.css"/>
+    </HEAD>   
+    
+    <body>
+        
+        <table class="header" width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+                <td bgcolor="#0099FF"><A href="FluidHelium.html"><font face="Arial" bgcolor="#0099FF" size="+0" underline="0" color="#000000"><b>Fluid helium 1.0</b></font></A></td>
+                <td width="36" bgcolor="#0099FF"><A HREF="userGuide_4_troubleshooting_3_others.html"><IMG SRC="Images/leftarrow.png" BORDER="0" ALT="previous page"/></A><A HREF="FluidHelium.html"><IMG SRC="Images/rightarrow.png" BORDER="0" ALT="next page"/></A></td>
+            </tr>
+        </table>
+        
+        <h1><font face="Arial" size="+3" underline="0" color="#D16116">5. Customization</font>&nbsp;<A href="FluidHelium.html"><img src="Images/uparrow.png" border="0" align="top" alt="Go back up one level"/></A></h1>
+        <p>
+            <h2>a. Introduction </h2>
+            <p>
+                This section will show you how to implement your own 
+                block insied of the Fluid Helium library.
+                <br/>
+                If you want to do some customization, you need to
+                have the Simscape Toolbox.
+                <br/>
+                You should have a look at the help of this toolbox, 
+                especially the <a href ="http://www.mathworks.com/help/physmod/simscape/customization.html">
+                custumization section</a>.
+                You will find all the information about the programming language
+                of Simscape. And how to implement you component in an
+                acasual system.
+                <br/>
+                In the section below you will find the extra information
+                required to implement your component insied of the Fluid
+                Helium library.
+            </p>
+            <h2>b. Fluid Helium Domain</h2>
+            <p>
+                The fluid helium domain declaration is shown below.
+                <p><pre class="programlisting">
+                domain fluidHelium
+                % fluidHelium domain
+                % The different variables are : pressure, enthalpy and mass flow rate
+                parameters (Size = variable)
+
+                    % helium properties with P and T inputs
+                    T_T_P     = {1:100, 'K'  };            % temperature
+                    P_T_P     = {1:100, 'bar'};            % pressure
+
+                    H_T_P     = {ones(100,100), 'J/kg'  }; % enthalpy
+                    Cp_T_P    = {ones(100,100), 'J/kg/K'}; % specific heat
+
+                    % helium properties with P and H inputs
+                    P_P_H     = {1:100, 'bar' };     % pressure
+                    H_P_H     = {1:100, 'J/kg'};     % enthalpy
+
+                    X_P_H     = {ones(100,100), '1'     }; % quality
+                    T_P_H     = {ones(100,100), 'K'     }; % temperature
+                    rho_P_H   = {ones(100,100), 'kg/m^3'}; % density
+                    gamma_P_H = {ones(100,100), '1'     }; % specific heat ratio
+                    S_P_H     = {ones(100,100), 'J/kg/K'}; % entropy
+                    Z_P_H     = {ones(100,100), '1'     }; % compression factor
+                    Cp_P_H    = {ones(100,100), 'J/kg/K'}; % specific heat
+
+                    % helium propertis with u and rho inputs
+                    u_u_rho   = {1:100, 'J/kg'  };       % specific energy
+                    rho_u_rho = {1:100, 'kg/m^3'};       % volumique masse
+
+                    H_u_rho   = {ones(100,100), 'J/kg'}; % enthalpy
+                    P_u_rho   = {ones(100,100), 'bar' }; % pressure
+                    T_u_rho   = {ones(100,100), 'K'   }; % temperature
+                    X_u_rho   = {ones(100,100), '1'   }; % quality
+
+                    % helium properties with P and S inputs
+                    P_P_S     = {1:100, 'bar'   };   % pressure
+                    S_P_S     = {1:100, 'J/kg/K'};   % entropy
+
+                    H_P_S     = {ones(100,100), 'J/kg'}; % enthalpy
+
+                    % helium propertis with T and rho inputs
+                    T_T_rho   = {1:100, 'K'     };       % temperature
+                    rho_T_rho = {1:100, 'kg/m^3'};       % volumique masse
+
+                    H_T_rho   = {ones(100,100), 'J/kg'}; % enthalpy
+
+                    % helium properties with SV and P inputs
+                    P_SV_P  = {1:1000, 'bar'};        % volumique masse
+
+                    HG_SV_P = {ones(1,1000), 'J/kg'}; % Gaz enthalpy
+
+                    % helium properties with SL and P inputs
+                    P_SL_P  = {1:1000, 'bar'};        % volumique masse
+
+                    HL_SL_P = {ones(1,1000), 'J/kg'}; % liquid enthalpy
+
+                    % Aluminium properties with Thot and Tcold inputs
+                    Th_Tc = {1:100, 'K'  };           % temperature
+
+                    Cpalum_Th_Tc = {ones(1,100),'J/kg/K'};
+
+                end
+
+                parameters
+                    % others properties
+                    T_min   = { 0, 'K'     }; % Minimum allowable temperature
+                    P_min   = { 0, 'bar'   }; % Minimum allowable pressure
+                    T_max   = { 0, 'K'     }; % Maximum allowable temperature
+                    P_max   = { 0, 'bar'   }; % Maximum allowable pressure
+                    Mol     = { 0, 'kg/mol'}; % Molar mass of the helium
+                end
+
+                parameters(Hidden = true)
+                    % Calculated properties
+                    H_min   = { 0, 'J/kg'   }; % Minimum allowable enthalpy
+                    S_min   = { 0, 'J/kg/K' }; % Minimum allowable entropy
+                    rho_min = { 0, 'kg/m^3' }; % Minimum allowable volumique mass
+                    u_min   = { 0, 'J/kg'   }; % Minimum allowable Specific energy
+                    H_max   = { 0, 'J/kg'   }; % Maximum allowable enthalpy
+                    S_max   = { 0, 'J/kg/K' }; % Maximum allowable entropy
+                    rho_max = { 0, 'kg/m^3' }; % Maximum allowable volumique mass
+                    u_max   = { 0, 'J/kg'   }; % Maximum allowable Specific energy
+                    R       = { 0, 'J/K/mol'}; % Perfect gaz constant
+                end
+
+                variables
+                    P  = { 0, 'bar' }; % Pressure
+                    M  = { 0, 'kg/s'}; % Masse flow rate
+                    H  = { 0, 'J/kg'}; % Enthalpy
+                end
+            end
+                </pre></p>
+                It contains the following variables :
+                <ul>
+                    <li>Across variable M (Mass flow rate), in kg/s</li>
+                    <li>Across variable P (Pressure), in bar       </li>
+                    <li>Across variable H (Enthalpy), in J/kg      </li>
+                    <br/>
+                    And the following tunable parameters
+                    <br/><br/>
+                    <li>Parameter T_min, defining the minimum allowable temperature             </li>
+                    <li>Parameter T_max, defining the maximum allowable temperature             </li>
+                    <li>Parameter P_min, defining the minimum allowable pressure                </li>
+                    <li>Parameter P_max, defining the maximum allowable pressure                </li>
+                    <li>Parameter Mol  , defining the molar mass of the fluid (default = helium)</li>
+                    <br/>
+                    Then there is parameters that are calculated automatically,
+                    you can access to this parameter in your code, 
+                    but you can't set their value directly.
+                    <br/><br/>
+                    <li>Parameter H_min, defining the minimum allowable entalpy</li>
+                    <li>Parameter H_max, defining the maximum allowable entalpy</li>
+                    <li>Parameter S_min, defining the minimum allowable entropy</li>
+                    <li>Parameter S_max, defining the maximum allowable entrpoy</li>
+                    <li>Parameter rho_min, defining the minimum allowable volumique mass</li>
+                    <li>Parameter rho_max, defining the maximum allowable volumique mass</li>
+                    <li>Parameter u_min, defining the minimum allowable specific energy </li>
+                    <li>Parameter u_max, defining the maximum allowable specific energy </li>
+                    <li>Parameter R, defining the perfect gaz constant                  </li>
+                </ul>
+                <br/>
+                To refer to this domain in your custom component declarations, use the following syntax:
+                <br/><br/>
+                <code>fluidHelium.fluidHelium</code>
+            </p>
+            <h2>c. Fluid Properties</h2>
+            <p>
+                You have certainly notice the fact that all this parameters
+                are not define in the domain definition code.
+                <br/>
+                All the default value are calculated in an other file :
+                <i>FluidProperties.ssc</i>.
+                <br/>
+                This allows you to tune the parameters of the fluid and
+                domaine with a block.
+                <br/>
+                Have a look at the 
+                <a href="blocks_4_utilities_1_fluidProperties">Fluid properties block.</a>
+                <br/>
+                This file contains many table of properties of the Helium.
+                If you want to implement an other fluid, you should rewrite
+                this file with the table of the considered fluid.
+                <br/>
+                To do this you need the source files of the library.
+                <br/>
+                Please contact the technical support of this Toolbox for
+                more information.
+            </p>
+        </p>
+        
+        <table class="footer" width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+                <td width="18"  height="15" bgcolor="#0099FF" align="left"  ><a href="userGuide_4_troubleshooting_3_others.html" ><img  src="images/leftarrow.png" border="0" alt="previous page"/></a></td>
+                <td width="40%" height="15" bgcolor="#0099FF" align="left"  ><a href="userGuide_4_troubleshooting_3_others.html" ><font face="arial" bgcolor="#e4f0f8" size="normal" underline="0" color="#000000">4.4 Others </font></a></td>
+                <td width="20%" height="15" bgcolor="#0099FF" align="center"><a href="FluidHelium.html" ><font face="arial" bgcolor="#e4f0f8" size="normal" underline="0" color="#000000">[Top]</font></a></td>
+                <td width="40%" height="15" bgcolor="#0099FF" align="right" ><a href="FluidHelium.html"><font face="arial" bgcolor="#e4f0f8" size="normal" underline="0" color="#000000"> Front page</font></a></td>
+                <td width="18"  height="15" bgcolor="#0099FF" align="right" ><a href="FluidHelium.html"><img  src="images/rightarrow.png" border="0" alt="next page"/></a></td>
+            </tr>
+        </table>
+        <font face="Arial" bgcolor="#0099FF" size="normal" underline="0" color="#000000">&copy;2015 The PI-02</font>  
+    </body>
+</html>
+

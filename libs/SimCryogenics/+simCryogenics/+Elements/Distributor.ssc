@@ -1,0 +1,37 @@
+component (Hidden = true) Distributor
+    % Distributor
+    %
+    % This component is a distributor. It allows the user to connect one 
+    % component to serval components.
+    %
+    % This component impose both temperature and pressure on its outlets and 
+    % the flow rate on the inlet. To ensure compilation, the distributor inlet 
+    % must be connected to a component that impose both pressure and
+    % temperature (such a HeatExchanger or a pipe outlet). Every outlets must
+    % be connected to a component that impose the flow rate (such a valve inlet).
+    %
+    nodes
+        in1  = simCryogenics.fluid;  % :left
+        out1 = simCryogenics.fluid;  % :right
+        out2 = simCryogenics.fluid;  % :right
+    end
+    
+    components (Hidden=true)
+         v1 = simCryogenics.Utilities.verif;
+         v2 = simCryogenics.Utilities.verif;
+         v3 = simCryogenics.Utilities.verif;
+    end
+     
+    connections
+        connect(in1,  v1.in1);
+        connect(out1, v2.in1) ;
+        connect(out2, v3.in1) ;
+    end
+    
+    equations
+        out1.P == in1.P;
+        out2.P == in1.P;
+        out1.H == in1.H;
+        out2.H == in1.H;
+    end
+end

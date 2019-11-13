@@ -1,0 +1,17 @@
+component DHT
+    % DHT : 2 : fixed
+    %
+    %
+    nodes
+        in1 = simCryogenics.fluid; % : Left
+        in2 = simCryogenics.fluid; % : Left
+    end
+    
+    outputs
+        DH = { 0, 'W'}; % : Right
+    end
+    
+    equations
+        DH == in1.M*in1.H - in2.M*in2.H;
+    end
+end

@@ -1,0 +1,20 @@
+component PressureLoss
+    % Pressure loss : 2
+    %
+   
+    nodes
+        in1  = simCryogenics.fluid; % in1:Left
+        out1 = simCryogenics.fluid; % out1:Right
+    end
+    
+    parameters
+        K = {1,'s*bar/kg'}; % Loss coefficient
+    end
+   
+    equations
+        out1.H == in1.H;
+        out1.M == in1.M;
+        
+        out1.P == in1.P - K*out1.M;
+    end
+end

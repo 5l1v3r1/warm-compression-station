@@ -1,0 +1,19 @@
+component PFT
+    % PFT : 2 : fixed
+    %
+    % This component is a perfect pressure and temperature sensor
+    %
+    nodes
+        in1 = simCryogenics.fluid; % : Left
+    end
+    
+    outputs
+        PT = { 0, 'bar' }; % P: Right
+        FT = { 0, 'kg/s'}; % F: Right
+    end
+    
+    equations
+        FT == in1.M;
+        PT == in1.P;
+    end
+end

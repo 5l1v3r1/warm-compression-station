@@ -1,0 +1,14 @@
+component (Hidden=true) atest1
+      
+    nodes
+        out1 = simCryogenics.fluid;  
+        in1  = simCryogenics.fluid; 
+    end
+    
+    equations
+        out1.H == in1.H;
+        out1.M == in1.M;
+        out1.P == in1.P;
+    end
+end
+    

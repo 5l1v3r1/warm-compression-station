@@ -1,0 +1,23 @@
+component (Propagation=blocks) btest1
+    
+    nodes
+        p1 = simCryogenics.fluid;
+        n1 = simCryogenics.fluid;
+        p2 = simCryogenics.fluid;
+        n2 = simCryogenics.fluid;
+    end
+    
+    components(Hidden=true)
+        e1 = simCryogenics.Elements.atest1;
+        e2 = simCryogenics.Elements.atest1;
+    end
+    
+    connections
+        connect(e1.out1, p1);
+        connect(e1.in1, n1);
+        connect(e2.out1, p2);
+        connect(e2.in1, n2);
+    end
+    
+end
+    

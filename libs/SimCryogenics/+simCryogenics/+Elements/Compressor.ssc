@@ -1,0 +1,68 @@
+component Compressor
+    % Compressor
+    % 
+    % This component is an isothermal screw compressor.
+    % This component is imposing both inlet and outlet
+    % flowrate, as well as outlet temperature. 
+    % 
+    % To ensure compilation, you must connect the inlet 
+    % port to a component node that impose both pressure 
+    % and enthalpy (such a pipe outlet).The outlet port 
+    % must be connected to a component node that impose 
+    % pressure (such a pipe inlet)
+    %
+    % The parameter Kc must be positive 
+    inputs
+        N = { 0, 'rad/s'}; % N:Left
+    end
+    
+    nodes
+        in1  = simCryogenics.fluid; % in:Left
+        out1 = simCryogenics.fluid; % out:Right
+    end
+        
+    parameters
+        Kc              = { 0.0014, 'kg/s/Hz/bar'  }; % Compressor constant
+        lin_v           = { 0,      '1'            }; % Treat input as flowrate
+        vol             = { 1,      '1'            }; % If flowrate input
+        Pnom            = { 1,      'bar'          }; % Nom. press. if volumetric
+        ControlInputMin = { 25,     'Hz'           }; % Minimum speed
+        ControlInputMax = { 60,     'Hz'           }; % Maximum speed
+    end
+    
+    variables
+        T = { 0, 'K'};
+    end
+    
+    components (Hidden=true)
+        v1 = simCryogenics.Utilities.verif;
+        v2 = simCryogenics.Utilities.verif;
+    end
+    
+    function setup
+        if Kc <= 0, error('Compressor constant must be greater than zero'); end        
+    end
+    
+    connections
+        connect(in1,  v1.in1);
+        connect(out1, v2.in1);
+    end 
+    
+    equations    
+        if lin_v == 0
+            out1.M == Kc*N*in1.P;
+            assert(N > ControlInputMin, 'Rotation speed control is too low' , Warn = true);
+            assert(N < ControlInputMax, 'Rotation speed control is too high', Warn = true);
+        else
+            if vol==0
+                out1.M == N*{1,'kg*rad'};
+            else
+                out1.M == N*{1,'kg*rad'}*in1.P/Pnom;
+            end
+        end
+        
+        in1.M  == out1.M;
+        T      == tablelookup(in1.P_P_H, in1.H_P_H,in1.T_P_H, in1.P, in1.H, interpolation=linear, extrapolation=nearest);
+        out1.H == tablelookup(out1.T_T_P, out1.P_T_P, out1.H_T_P, T, out1.P, interpolation=linear, extrapolation=nearest);
+    end
+end

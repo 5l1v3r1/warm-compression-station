@@ -1,0 +1,79 @@
+component tuyau_p_presion
+    
+    % tuyau_p.presion
+    
+    nodes
+        in1 = simCryogenics.fluid; % : Left
+        out1 = simCryogenics.fluid; % : Right
+    end
+    
+    inputs
+        Q = { 0, 'W'}; % : Left
+    end
+%     
+%     outputs
+%         test2 = { 0, 'kg/s'}; % : Right
+%     end
+    
+    parameters
+        V = {0,'m^3'};
+        Pinit = {10, 'bar'};
+        Tinit = {10, 'K'};
+        K = {0,'bar*s/kg'};
+        act = {1,'1'};
+        Isochoric = {0,'1'}; % Isochoric 1/0
+    end
+    
+    variables
+        rho = {10,'kg/m^3'};
+        u = {1000, 'J/kg'};
+%         u = {ones(2,1), 'J/kg'};
+%         P = {0, 'bar'};
+%         M = {0, 'kg/s'};
+%         H = {0, 'J/kg'};
+    end
+    
+    function setup
+        u = hecalc(11,0,2,value(Tinit,'K'),1,value(Pinit,'Pa'),0);
+        rho = hecalc(3,0,2,value(Tinit,'K'),1,value(Pinit,'Pa'),0);
+        
+          if (Isochoric ~= 0 && Ideal ~=1),   error('The "Isochoric" parameter must be 1 or 0');      
+          end
+    end
+    
+    equations
+      
+        if  act == 1
+            if Isochoric == 0
+                    rho.der == (in1.M-out1.M)/V;
+                    u.der == ((in1.M*in1.H-out1.M*out1.H+Q)-(in1.M-out1.M)*u)/(rho*V);
+
+                    %         in1.P == out1.P;
+                    %         u(1).der == ((in1.M*in1.H-M*H)-(in1.M-M)*u(1))/(rho*V/2)
+                    %         u(2).der == ((M*H-out1.M*out1.H)-(M-out1.M)*u(2))/(rho*V/2)
+                    %         
+                    in1.P == tablelookup(out1.u_u_rho, out1.rho_u_rho, out1.P_u_rho, u, rho, interpolation=linear);  
+
+
+                    %        H == tablelookup(out1.u_u_rho, out1.rho_u_rho, out1.H_u_rho, u(1), rho, interpolation=linear);   %1
+                    %        M == 1/2*in1.M+1/2*out1.M;   %1
+                    out1.H == tablelookup(out1.u_u_rho, out1.rho_u_rho, out1.H_u_rho, u, rho, interpolation=linear);
+                    out1.M == (in1.P-out1.P)/K;
+                    
+            else
+                rho.der == (in1.M-out1.M)/V;
+                u.der == ((in1.M*in1.H-out1.M*out1.H+Q)-(in1.M-out1.M)*u)/(rho*V);
+                
+                in1.P == tablelookup(out1.u_u_rho, out1.rho_u_rho, out1.P_u_rho, u, rho, interpolation=linear);  
+                out1.H == tablelookup(out1.u_u_rho, out1.rho_u_rho, out1.H_u_rho, u, rho, interpolation=linear); 
+                  in1.M == out1.M
+            end     
+        else
+            rho.der == 0;
+            u.der == 0;
+            out1.P == in1.P;
+            out1.H == in1.H;
+            out1.M == in1.M;
+        end
+    end
+end

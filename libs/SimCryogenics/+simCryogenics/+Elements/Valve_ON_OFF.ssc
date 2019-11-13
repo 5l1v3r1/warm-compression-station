@@ -1,0 +1,21 @@
+component Valve_ON_OFF  < simCryogenics.Elements.Valve
+    % Valve_ON_OFF
+    %
+    % This component is a ON/OFF valve. It impose the flow rate on both its 
+    % inlet and outlet port. The outlet port also impose the temperature.
+    % 
+    % To ensure compilation, the ON/OFF valve inlet port must be connected to 
+    % a component  port that impose both temperature and pressure. The outlet 
+    % port must be  connected to a component port that impose pressure.
+    %
+    % The parameters CVmax, Xt and Rv must be positive.
+    %
+    equations        
+        assert(value(C,'1') == 1 || value(C,'1') == 0 , 'ValveTOR command must be 0 or 1', Warn = true);
+        if C >= 1
+            Cmd == 100;
+        else
+            Cmd == 0;
+        end
+    end
+end

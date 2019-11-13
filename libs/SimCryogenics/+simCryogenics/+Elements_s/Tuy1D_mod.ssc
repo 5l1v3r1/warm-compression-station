@@ -1,0 +1,150 @@
+component(Hidden=true) Tuy1D_mod
+%     Tuy1D_mod
+    nodes        
+        in1  = simCryogenics.fluid; % in: left
+        out1 = simCryogenics.fluid; % out: right
+    end
+
+    inputs
+        Q = {zeros(10,1),'W'}; % Q: left
+    end
+    
+    outputs
+        T = {zeros(10,1),'K'}; % T: right
+        h = {zeros(10,1), 'W/K'}; % h: right
+    end
+
+    parameters
+        N   = { 10     , '1'      }; % Number of elementary loop
+        V  = { 2.3e-3, 'm^3'     }; % Hot pipe volume
+        M   = { 13    , 'kg'      }; % Masse of the aluminium
+        K  = { 0.6   , 'bar*s/kg'}; % Hot pressure drop coefficient
+        Hout0 = { ones(10,1)   , 'kJ/kg'}; % Initial Enthalpy
+        Cpn = { ones(10,1), 'J/kg/K'}; % Nominal specific heat
+        mun = {ones(10,1),  'kg/(m*s)'}; % Nominal viscosity
+        Prn = {ones(10,1), '1'}; % Nominal Prandtl number
+        sens = { 0   , '1'}; % sens
+        Mn = { 1, 'kg/s'}; % Nominal flowrate
+        hn = {1, 'W/K'}; % Nominal heat transfer coefficient
+        ex_mode = {1, '1'}; % % Choice for h computation
+    end
+
+    components (Hidden=true)
+        e11 = simCryogenics.Elements_s.Tuy1DFond_mod(V=V/N, M=M/N, K=K/N, sens = sens, Mn=Mn, hn=hn, ex_mode=ex_mode);
+        e12 = simCryogenics.Elements_s.Tuy1DFond_mod(V=V/N, M=M/N, K=K/N, sens = sens, Mn=Mn, hn=hn, ex_mode=ex_mode);
+        e13 = simCryogenics.Elements_s.Tuy1DFond_mod(V=V/N, M=M/N, K=K/N, sens = sens, Mn=Mn, hn=hn, ex_mode=ex_mode);
+        e14 = simCryogenics.Elements_s.Tuy1DFond_mod(V=V/N, M=M/N, K=K/N, sens = sens, Mn=Mn, hn=hn, ex_mode=ex_mode);
+        e15 = simCryogenics.Elements_s.Tuy1DFond_mod(V=V/N, M=M/N, K=K/N, sens = sens, Mn=Mn, hn=hn, ex_mode=ex_mode);
+        e16 = simCryogenics.Elements_s.Tuy1DFond_mod(V=V/N, M=M/N, K=K/N, sens = sens, Mn=Mn, hn=hn, ex_mode=ex_mode);
+        e17 = simCryogenics.Elements_s.Tuy1DFond_mod(V=V/N, M=M/N, K=K/N, sens = sens, Mn=Mn, hn=hn, ex_mode=ex_mode);
+        e18 = simCryogenics.Elements_s.Tuy1DFond_mod(V=V/N, M=M/N, K=K/N, sens = sens, Mn=Mn, hn=hn, ex_mode=ex_mode);
+        e19 = simCryogenics.Elements_s.Tuy1DFond_mod(V=V/N, M=M/N, K=K/N, sens = sens, Mn=Mn, hn=hn, ex_mode=ex_mode);
+        e110 = simCryogenics.Elements_s.Tuy1DFond_mod(V=V/N, M=M/N, K=K/N, sens = sens, Mn=Mn, hn=hn, ex_mode=ex_mode);
+    end
+     
+    function setup
+        e11.act = {cast(value(N,'1')>=1,'double'),'1'};
+        e12.act = {cast(value(N,'1')>=2,'double'),'1'};
+        e13.act = {cast(value(N,'1')>=3,'double'),'1'};
+        e14.act = {cast(value(N,'1')>=4,'double'),'1'};
+        e15.act = {cast(value(N,'1')>=5,'double'),'1'};
+        e16.act = {cast(value(N,'1')>=6,'double'),'1'};
+        e17.act = {cast(value(N,'1')>=7,'double'),'1'};
+        e18.act = {cast(value(N,'1')>=8,'double'),'1'};
+        e19.act = {cast(value(N,'1')>=9,'double'),'1'};
+        e110.act = {cast(value(N,'1')>=10,'double'),'1'};        
+                
+        e11.Hout0 = Hout0(1);
+        e12.Hout0 = Hout0(2);
+        e13.Hout0 = Hout0(3);
+        e14.Hout0 = Hout0(4);
+        e15.Hout0 = Hout0(5);
+        e16.Hout0 = Hout0(6);
+        e17.Hout0 = Hout0(7);
+        e18.Hout0 = Hout0(8);
+        e19.Hout0 = Hout0(9);
+        e110.Hout0 = Hout0(10);
+        
+        e11.Cpn = Cpn(1);
+        e12.Cpn = Cpn(2);
+        e13.Cpn = Cpn(3);
+        e14.Cpn = Cpn(4);
+        e15.Cpn = Cpn(5);
+        e16.Cpn = Cpn(6);
+        e17.Cpn = Cpn(7);
+        e18.Cpn = Cpn(8);
+        e19.Cpn = Cpn(9);
+        e110.Cpn = Cpn(10);
+        
+        e11.mun = mun(1);
+        e12.mun = mun(2);
+        e13.mun = mun(3);
+        e14.mun = mun(4);
+        e15.mun = mun(5);
+        e16.mun = mun(6);
+        e17.mun = mun(7);
+        e18.mun = mun(8);
+        e19.mun = mun(9);
+        e110.mun = mun(10);
+        
+        e11.Prn = Prn(1);
+        e12.Prn = Prn(2);
+        e13.Prn = Prn(3);
+        e14.Prn = Prn(4);
+        e15.Prn = Prn(5);
+        e16.Prn = Prn(6);
+        e17.Prn = Prn(7);
+        e18.Prn = Prn(8);
+        e19.Prn = Prn(9);
+        e110.Prn = Prn(10);
+    end
+     
+    connections
+        connect(in1, e11.in1);
+        connect(e11.out1, e12.in1);
+        connect(e12.out1, e13.in1);
+        connect(e13.out1, e14.in1);
+        connect(e14.out1, e15.in1);
+        connect(e15.out1, e16.in1);
+        connect(e16.out1, e17.in1);
+        connect(e17.out1, e18.in1);
+        connect(e18.out1, e19.in1);
+        connect(e19.out1, e110.in1);
+        connect(e110.out1, out1);
+        
+        connect(Q(1), e11.Q)
+        connect(Q(2), e12.Q)
+        connect(Q(3), e13.Q)
+        connect(Q(4), e14.Q)
+        connect(Q(5), e15.Q)
+        connect(Q(6), e16.Q)
+        connect(Q(7), e17.Q)
+        connect(Q(8), e18.Q)
+        connect(Q(9), e19.Q)
+        connect(Q(10), e110.Q)    
+    end
+
+    equations
+        e11.T == T(1)
+        e12.T == T(2)
+        e13.T == T(3)
+        e14.T == T(4)
+        e15.T == T(5)
+        e16.T == T(6)
+        e17.T == T(7)
+        e18.T == T(8)
+        e19.T == T(9)
+        e110.T == T(10)
+        
+        e11.h == h(1)
+        e12.h == h(2)
+        e13.h == h(3)
+        e14.h == h(4)
+        e15.h == h(5)
+        e16.h == h(6)
+        e17.h == h(7)
+        e18.h == h(8)
+        e19.h == h(9)
+        e110.h == h(10)
+    end
+end

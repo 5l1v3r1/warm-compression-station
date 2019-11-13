@@ -1,0 +1,61 @@
+component regul
+    % Regulation
+    % This regulation bloc implements a simple P controller by multiplying 
+    % the error relative to the reference and adding the result with a specified offset.
+    % Input p_v (measure) should be connected to a physical signal from a sensor.
+    % Input f_c (final command) is the constant command to be applied after switch time.
+    % Output p_c (command) is the resulting command.
+    % Parameter st (switch time) is the time at which you want to switch to a constant command
+    % when the simulation time exceeds st, the regulation will be turned off and the specified 
+    % constant command will be applied.
+  
+    inputs
+        measure = { 0 , '1' }; % PV :left
+        final_command = {0, '1'}; % f_c :left
+    end 
+    
+    outputs
+        command = {0, '1'}; %PC :right
+    end
+    
+    parameters
+        ctrl_type   = { 0,    '1'  }; % Controller type
+        reference   = { 1,    '1'  }; % Reference to follow
+        p_gain      = { 1,    '1'  }; % Proportional gain
+        i_gain      = { 1,    '1/s'}; % Integral gain
+        offset      = { 1,    '1'  }; % Command offset
+        sat_min     = { -1e9, '1'  }; % Command saturation minimum
+        sat_max     = { +1e9, '1'  }; % Command saturation maximum
+        switch_time = { 1e9,  '1'  }; % Time after which the regulation will be turned off
+    end
+    
+    variables (Hidden = true)
+        c_command = {0, '1'}; % Computed command
+        err       = {0, '1'}; % Error relative to the reference
+        errDer    = {0, '1'}; % Error first order derivative
+    end
+
+    function setup
+        if sat_min > sat_max, error('Saturation minimum must be lower than saturation maximum'); end
+        if switch_time < 0, error('Switch time must be positive or equal to zero'); end
+        errDer = 0;
+    end
+   
+    equations
+        err == reference - measure;
+        
+        if ((ctrl_type == 0) || (value(time,'s') > switch_time))
+            errDer.der == 0;
+        else
+            errDer.der == err*i_gain;
+        end
+        
+        c_command == p_gain*err + offset + errDer;
+        
+        if (value(time,'s') <= switch_time)
+            command == max(min(c_command,sat_max),sat_min);
+        else
+            command == final_command;
+        end
+    end
+end

@@ -1,0 +1,107 @@
+component Turbine
+    % Turbine
+    %
+    % This component is a cryogenic Turbine. It impose the flowrate on both 
+    % its inlet and oulet port. The outlet port also impose the temperature.
+    % 
+    % To ensure compilation, the Turbine inlet port must be connected to 
+    % a component port that impose both temperature and pressure. The oulet 
+    % port must be  connected to a component port that impose pressure.
+    % 
+    % The parameters A, D, eta0, v0, must be positive
+    %
+    nodes
+        in1  = simCryogenics.fluid; % :left
+        out1 = simCryogenics.fluid; % :right
+    end
+    
+    outputs
+        N = { 0 , 'rad/s' }; % N:right
+    end
+    
+    parameters
+        A    = { 5.8869e-6, 'm^2'}; % Section of the pass
+        D    = { 0.0255   , 'm'  }; % Diameter of the turbine 
+        eta0 = { 0.8      , '1'  }; % Nominal efficiency      
+        v0   = { 0.45     , '1'  }; % Nominal speed ratio    
+    end
+    
+    parameters(Hidden = true)
+        Cst1 = { 1.60689e-3 , '1/K^2'       }; % Polynome x^2 coeff
+        Cst2 = { -5.94974e-2, '1/K'         }; % Polynome x coeff
+        Cst3 = { 1.17822e+00, '1'           }; % Polynome cte coeff
+        Cst4   = { 1, '1/K'                 }; % turbine unit constant
+        Cst5   = { 1, 'J/(bar*kg)'          }; % turbine unit constant
+        Cst6   = { 1, 'rad^2*K/J/s'         }; % turbine unit constant
+        Cst7   = { 1, '(J/kg)^0.5/(m*rad/s)'}; % turbine unit constant
+    end
+    
+    variables (Hidden = true)
+        k      = { 0, '1'         }; % turbine constant
+        gamma  = { 0, '1'         }; % specific heat ratio
+        C      = { 0, '1'         }; % helium constant
+        Z      = { 0, '1'         }; % compression factor
+        Cp     = { 0, 'kJ/kg/K'    }; % specific heat
+        Sin    = { 0, 'kJ/kg'    }; % entropy
+        HoutIs = { 0, 'kJ/kg'      }; % Isentropic enthalpy
+        u1     = { 0, 'm*rad/s'   }; % jet velocity
+        c1     = { 0, '(J/kg)^0.5'}; % blade velocity
+        eta    = { 0, '1'         }; % Efficiency 
+        T      = { 0, 'K'         }; % Temperature
+    end
+    
+    function setup
+   
+        if A <= 0
+           error('Section of the turbine must be greater than zero');
+        end
+        if D <= 0
+           error('Diameter of the turbine must be greater than zero');
+        end
+
+        if eta0 <= 0
+           error('Normal efficiency of the turbine must be greater than zero');
+        end
+        if eta0 >1
+           error('Normal efficiency can''t be greater than 1');
+        end
+        if v0 <=0
+           error('Normal speed ratio of the turbine must be greater than zero');
+        end        
+    end
+    
+    equations
+        assert(value(out1.P, 'bar' ) <= value(out1.P_max, 'bar' ),'The pressure is too high (>P_max)'   , Warn = true);
+        assert(value(out1.H, 'J/kg') <= value(out1.H_max, 'J/kg'),'The temperature is too high (>T_max)', Warn = true);
+        assert(value(out1.P, 'bar' ) >= value(out1.P_min, 'bar' ),'The pressure is too low (<P_min)'    , Warn = true);
+        assert(value(out1.H, 'J/kg') >= value(out1.H_min, 'J/kg'),'The temperature is too low (>T_min)' , Warn = true);
+
+        assert(value(in1.P, 'bar' ) <= value(in1.P_max , 'bar' ),'The pressure is too high (>P_max)'   , Warn = true);
+        assert(value(in1.H, 'J/kg') <= value(in1.H_max , 'J/kg'),'The temperature is too high (>T_max)', Warn = true);
+        assert(value(in1.P, 'bar' ) >= value(in1.P_min , 'bar' ),'The pressure is too low (<P_min)'    , Warn = true);
+        assert(value(in1.H, 'J/kg') >= value(in1.H_min , 'J/kg'),'The temperature is too low (>T_min)' , Warn = true);
+        
+        assert(value(eta, '1') <= 1 , 'The quality of the fluid is greater than 1', Warn = true);
+        assert(value(eta, '1') >= 0 , 'The quality of the fluid is lower than 0'  , Warn = true);
+        
+        % he parameters with T and P inputs
+        gamma  == tablelookup(in1.P_P_H, in1.H_P_H, in1.gamma_P_H, in1.P, in1.H, interpolation=linear);
+        Z      == tablelookup(in1.P_P_H, in1.H_P_H, in1.Z_P_H    , in1.P, in1.H, interpolation=linear);
+        Sin    == tablelookup(in1.P_P_H, in1.H_P_H, in1.S_P_H    , in1.P, in1.H, interpolation=linear);
+        Cp     == tablelookup(in1.P_P_H, in1.H_P_H, in1.Cp_P_H   , in1.P, in1.H, interpolation=linear);
+        T      == tablelookup(in1.P_P_H, in1.H_P_H, in1.T_P_H    , in1.P, in1.H, interpolation=linear);
+        % he parameters with P and S inputs
+        HoutIs == tablelookup(in1.P_P_S, in1.S_P_S, in1.H_P_S    , out1.P, Sin , interpolation=linear);
+        
+        % Others equations
+        C      == sqrt(gamma*(2/(gamma+1))^((gamma+1)/(gamma-1)));                                
+        out1.M == C*in1.P*A/sqrt(Z*in1.R*T/in1.Mol);
+        k      == 1/(Cst1*T.^2+Cst2*T+Cst3);    
+        N      == sqrt(Cst6*1e3*k*out1.M*Cp*(Cst4*2*T/(gamma+1)-Cst5*out1.P/(Z*in1.R*T/in1.Mol)));        
+        u1     == pi*N*D;                                                                        
+        c1     == sqrt(2*(in1.H-HoutIs));                                                           
+        eta    == eta0*(2*Cst7*(u1/c1)/v0-(Cst7*(u1/c1)/v0)^2);                                   
+        out1.H == in1.H*(1-eta)+eta*HoutIs                                                         
+        in1.M  == out1.M;
+    end
+end

@@ -1,0 +1,78 @@
+<?xml version='1.0' encoding="utf-8"?>
+<toc version="2.0">    
+    <tocitem target="FluidHelium.html">My Toolbox
+        <tocitem target="gettingStarted.html" image ="HelpIcon.GETTING_STARTED">Getting started
+            <tocitem target="gettingStarted_1_introduction.html"  >1. What is Fluid Helium Toolbox ? </tocitem>
+            <tocitem target="gettingStarted_2_installation.html"  >2. Installation                   </tocitem>
+            <tocitem target="gettingStarted_3_release.html"       >3. Release notes                  </tocitem>
+            <tocitem target="gettingStarted_4_acknoledgement.html">4. Acknoledgement                 </tocitem>
+        </tocitem>
+        
+        <tocitem target="userGuide.html" image ="HelpIcon.USER_GUIDE">User Guides    
+            <tocitem target="userGuide_1_understanding.html"                     >1. Understanding Fluid Helium
+                <tocitem target="userGuide_1_understanding_1_basics.html"        >1.1. Fluid helium basics</tocitem>
+                <tocitem target="userGuide_1_understanding_2_littleTutorial.html">1.2. Little tutorial    </tocitem>
+                <tocitem target="userGuide_1_understanding_3_bestPractices.html" >1.3. Best practices     </tocitem>                
+            </tocitem>
+            <tocitem target="userGuide_2_create.html">2. Create your own model
+                <tocitem target="userGuide_2_create_1_defineSource.html"> 2.1. Define a source           </tocitem>
+                <tocitem target="userGuide_2_create_2_construct.html"   > 2.2. Construct your model      </tocitem>
+                <tocitem target="userGuide_2_create_3_parametrize.html" > 2.3. Parametrize your component</tocitem>
+                <tocitem target="userGuide_2_create_4_defineSensor.html"> 2.4. Define sensors            </tocitem>                
+            </tocitem>
+            <tocitem target="userGuide_3_simulation.html">3. Simulation
+                <tocitem target="userGuide_3_simulation_1_time.html"           > 3.1. Time of the simulation</tocitem>
+                <tocitem target="userGuide_3_simulation_2_Warning.html"        > 3.2. Simulation warning    </tocitem>
+                <tocitem target="userGuide_3_simulation_3_Error.html"          > 3.3. Simulation error      </tocitem>       
+            </tocitem>
+            <tocitem target="userGuide_4_troubleshooting.html">4. Troubleshooting
+                <tocitem target="userGuide_4_troubleshooting_1_badConnections.html"        > 4.1. Bad connections         </tocitem>
+                <tocitem target="userGuide_4_troubleshooting_2_initializationProblems.html"> 4.2. Initialization problems</tocitem>
+                <tocitem target="userGuide_4_troubleshooting_3_others.html"                > 4.3. Others                 </tocitem>                
+            </tocitem>
+            <tocitem target="userGuide_5_customization.html">5. Customization             
+            </tocitem>           
+        </tocitem>
+        
+        <tocitem target="blocks.html" image ="HelpIcon.BLOCK">Blocks 
+            <tocitem target="blocks_1_elements.html">1. Elements
+                <tocitem target="blocks_1_elements_1_compressor.html"    >1.1. Compressor     </tocitem>
+                <tocitem target="blocks_1_elements_2_valve.html"         >1.2. Valve          </tocitem>
+                <tocitem target="blocks_1_elements_3_valveON_OFF.html"   >1.3. ValveON/OFF    </tocitem>
+                <tocitem target="blocks_1_elements_4_pipe.html"          >1.4. Pipe           </tocitem>
+                <tocitem target="blocks_1_elements_5_turbine.html"       >1.5. Turbine        </tocitem>
+                <tocitem target="blocks_1_elements_6_distributor.html"   >1.6. Distributor    </tocitem>
+                <tocitem target="blocks_1_elements_7_mixer.html"         >1.7. Mixer          </tocitem>
+                <tocitem target="blocks_1_elements_8_phaseSeparator.html">1.8. Phase separator</tocitem>
+                <tocitem target="blocks_1_elements_9_nef.html"           >1.9. Nef            </tocitem>
+            </tocitem>
+            <tocitem target="blocks_2_sensors.html">2. Sensors
+                <tocitem target="blocks_2_sensors_1_Mtransmitter.html">M transmitter</tocitem>
+                <tocitem target="blocks_2_sensors_2_Ptransmitter.html">P transmitter</tocitem>
+                <tocitem target="blocks_2_sensors_3_Ttransmitter.html">T transmitter</tocitem>
+                <tocitem target="blocks_2_sensors_4_Xtransmitter.html">X transmitter</tocitem>
+            </tocitem>
+            <tocitem target="blocks_3_sources.html">3. Sources
+                <tocitem target="blocks_3_sources_1_MctrlSrc.html" >M controlled source  </tocitem>
+                <tocitem target="blocks_3_sources_2_Msrc.html"     >M source             </tocitem>
+                <tocitem target="blocks_3_sources_3_MTctrlSrc.html">M/T controlled source</tocitem>
+                <tocitem target="blocks_3_sources_4_MTSrc.html"    >M/T source           </tocitem>
+                <tocitem target="blocks_3_sources_5_PctrlSrc.html" >P controlled source  </tocitem>
+                <tocitem target="blocks_3_sources_6_Psrc.html"     >P source             </tocitem>
+                <tocitem target="blocks_3_sources_7_PTctrlSrc.html">P/T controlled source</tocitem>
+                <tocitem target="blocks_3_sources_8_PTsrc.html"    >P/T source           </tocitem>
+            </tocitem>
+            <tocitem target="blocks_4_utilities.html">4. Utilities
+                <tocitem target="blocks_4_utilities_1_fluidProperties.html">Fluid properties</tocitem>
+                <tocitem target="blocks_4_utilities_2_pressureDrop.html"   >Pressure drop   </tocitem>
+                <tocitem target="blocks_4_utilities_3_heatLoad.html"       >Heat load       </tocitem>
+            </tocitem>            
+        </tocitem>
+        
+        <tocitem target="examples.html" image="HelpIcon.EXAMPLES">Examples
+            <tocitem target="examples_1_stationOfCompression.html">1. Station of compression</tocitem>
+            <tocitem target="examples_2_JouleThomsonCycle.html"   >2. Joule Thompson cycle  </tocitem>
+            <tocitem target="examples_3_BraytonCycle.html"        >3. Brayton cycle         </tocitem>            
+        </tocitem>
+    </tocitem>
+</toc>

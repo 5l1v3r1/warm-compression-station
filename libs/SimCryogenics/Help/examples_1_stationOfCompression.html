@@ -1,0 +1,136 @@
+<html xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+      xsi:noNamespaceSchemaLocation="optional">
+    
+    <HEAD>
+        <TITLE>StationOfCompression</TITLE>
+        <META AUTHOR="Adrien Vassal"/>
+        <META COPYRIGHT="2015 PI-02"/>
+        <LINK REL="stylesheet" TYPE="text/css" HREF="doc.css"/>
+    </HEAD>   
+    
+    <body>
+        
+        <table class="header" width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+                <td bgcolor="#0099FF"><A href="FluidHelium.html"><font face="Arial" bgcolor="#0099FF" size="+0" underline="0" color="#000000"><b>Fluid helium 1.0</b></font></A></td>
+                <td width="36" bgcolor="#0099FF"><A HREF="examples.html"><IMG SRC="Images/leftarrow.png" BORDER="0" ALT="previous page"/></A><A HREF="examples_2_JouleThomsonCycle.html"><IMG SRC="Images/rightarrow.png" BORDER="0" ALT="next page"/></A></td>
+            </tr>
+        </table>
+        
+        <h1><font face="Arial" size="+3" underline="0" color="#D16116">1. Station of compression</font>&nbsp;<A href="FluidHelium.html"><img src="Images/uparrow.png" border="0" align="top" alt="Go back up one level"/></A></h1>
+        <p>
+            <h2> a. Description </h2>
+            <p>
+                The compression station is a sub-system that provides work
+                to the gas you want to cool down.
+                <br/>
+                This one is composed of :
+                <ul>
+                    <li>Two compressors : NC1 and NC2              </li>
+                    <li>Three valves : CV952, CV953 CV956          </li>
+                    <li>Three pipes : PipeHot, PipeCold and Pcapa  </li>               
+                </ul>
+                The cold input (Mcold) is represented by a source of mass
+                flow and temperature whereas the hot output (Mhot) is
+                represented by a source of mass flow.
+            </p>
+            
+            <h2> b. Simulation </h2>
+            <p>
+                Here is the set of parameters that you could use for the 
+                simulation :
+                <h3> Compressor </h3>
+                <p>
+                    Compressor NC1 and NC2 have the same parameters :
+                    <ul>
+                        <li>Constant of the compressor = 0.0014 </li>
+                        <li>Minimum compressor control = 0      </li>
+                        <li>Maximum compressor control = 60     </li>
+                    </ul>
+                </p>
+                
+                <h3> Valve CV952 </h3>
+                <p>
+                    <ul>
+                        <li>Valve constant  = 3.2 </li>
+                        <li>Xt              = 0.72</li>
+                        <li>Rv              = 18  </li>
+                        <li>Minimum allowed = 0   </li>
+                        <li>Maximum allowed = 100 </li>
+                    </ul>
+                </p>
+                <h3> Valve CV953 </h3>
+                <p>
+                    <ul>
+                        <li>Valve constant  = 3.2 </li>
+                        <li>Xt              = 0.72</li>
+                        <li>Rv              = 18  </li>
+                        <li>Minimum allowed = 0   </li>
+                        <li>Maximum allowed = 100 </li>
+                    </ul>
+                </p>
+                <h3> Valve CV956 </h3>
+                <p>
+                    <ul>
+                        <li>Valve constant  = 3.2 </li>
+                        <li>Xt              = 0.72</li>
+                        <li>Rv              = 18  </li>
+                        <li>Minimum allowed = 0   </li>
+                        <li>Maximum allowed = 100 </li>
+                    </ul>
+                </p>
+                <h3> PipeCold </h3>
+                <p>
+                    <ul>
+                        <li>Volume of the pipe  = 0.2  m^3</li>
+                        <li>Ideal1/0            = 1       </li>
+                        <li>Initial pressure    = 1.05 bar</li>
+                        <li>Initial temperature = 70   K  </li>
+                    </ul>
+                </p>
+                <h3> PipeHot </h3>
+                <p>
+                    <ul>
+                        <li>Volume of the pipe  = 1.5  m^3</li>
+                        <li>Ideal1/0            = 1       </li>
+                        <li>Initial pressure    = 16   bar</li>
+                        <li>Initial temperature = 300  K  </li>
+                    </ul>
+                </p>
+                <h3> Pcapa </h3>
+                <p>
+                    <ul>
+                        <li>Volume of the pipe  = 1    m^3 </li>
+                        <li>Ideal1/0            = 1        </li>
+                        <li>Initial pressure    = 8.525 bar</li>
+                        <li>Initial temperature = 185  K   </li>
+                    </ul>
+                </p>
+                <h3> Mcold et Mhot </h3>
+                <p>
+                    Mcold = Mhot = 0.06kg/m^3.
+                    <br/>
+                    For the temperature of the M/TCold source, it's the
+                    same than the cold pipe, ie 70 K
+                </p>                
+            </p>
+            <br/><br/>
+            <center width="118"  height="128" bgcolor="#0099FF" align="center"><img src="Images/examples_1_stationOfCompression.png" border="0"/></center>
+            <br/><br/>               
+            Remember to choose the solver ode15s, and if you want to use          
+            sscexplore, set the 'Log simulation data' to 'all' in the 
+            parameter configuration panel.            
+        </p>
+        
+        <table class="footer" width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+                <td width="18"  height="15" bgcolor="#0099FF" align="left"  ><a href="examples.html" ><img  src="images/leftarrow.png" border="0" alt="previous page"/></a></td>
+                <td width="40%" height="15" bgcolor="#0099FF" align="left"  ><a href="examples.html" ><font face="arial" bgcolor="#e4f0f8" size="normal" underline="0" color="#000000">Examples</font></a></td>
+                <td width="20%" height="15" bgcolor="#0099FF" align="center"><a href="FluidHelium.html" ><font face="arial" bgcolor="#e4f0f8" size="normal" underline="0" color="#000000">[Top]</font></a></td>
+                <td width="40%" height="15" bgcolor="#0099FF" align="right" ><a href="examples_2_JouleThomsonCycle.html"><font face="arial" bgcolor="#e4f0f8" size="normal" underline="0" color="#000000">2. Joule Thomson cycle</font></a></td>
+                <td width="18"  height="15" bgcolor="#0099FF" align="right" ><a href="examples_2_JouleThomsonCycle.html"><img  src="images/rightarrow.png" border="0" alt="next page"/></a></td>
+            </tr>
+        </table>
+        <font face="Arial" bgcolor="#0099FF" size="normal" underline="0" color="#000000">&copy;2015 The PI-02</font>  
+    </body>
+</html>

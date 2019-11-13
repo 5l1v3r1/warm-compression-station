@@ -1,0 +1,52 @@
+component (Hidden=true) PhaseSepOpEq
+    % PhaseSepOpEq
+    
+	nodes
+        bathOutGaz  = simCryogenics.fluid; 
+        bathOutLiq  = simCryogenics.fluid;
+        bathIn      = simCryogenics.fluid;
+    end
+    
+    inputs
+        Q1  = { 0, 'W' };
+        Q2  = { 0, 'W' };
+        Q3  = { 0, 'W' };
+    end 
+    
+    outputs
+        X = { 0, '1'};
+        h_mes = { 0, '1'};
+        T = { 0, 'K'};
+    end
+    
+    parameters
+        hmax  = { 1, 'm'  }; % Bath height
+        S     = { 1, 'm^2'}; % Surface
+        h0    = { 1, 'm'  }; % Initial liquid height
+    end
+
+    variables
+        h     = {0   , 'm'      };
+        Mvap  = {0.02, 'kg/s'   };
+        h_der = {0   , 'm/s'    }; 
+    end
+    
+    function setup
+        h   = h0;
+    end
+
+    equations
+        T == tablelookup(bathIn.P_SV_P , bathIn.T_SV_P , bathIn.P, interpolation=linear, extrapolation=nearest);
+        X == tablelookup(bathIn.P_P_H, bathIn.H_P_H, bathIn.X_P_H, bathIn.P, bathIn.H, interpolation=linear, extrapolation=nearest);
+        Mvap == (Q1 + Q2 + Q3)/{2e4,'J/kg'};
+        h.der == (bathIn.M*(1-X) - bathOutLiq.M - Mvap)/{120,'kg/m^3'}/S;
+        h_der == (bathIn.M*(1-X) - bathOutLiq.M - Mvap)/{120,'kg/m^3'}/S;
+
+        bathOutGaz.M == bathIn.M*X + Mvap + 0.1667*(bathIn.M*(1-X) -  bathOutLiq.M - Mvap);
+        bathOutGaz.H == tablelookup(bathOutGaz.P_SV_P , bathOutGaz.HG_SV_P  , bathOutGaz.P, interpolation=linear, extrapolation=nearest);
+        bathOutLiq.H == tablelookup(bathOutLiq.P_SL_P , bathOutLiq.HL_SL_P  , bathOutLiq.P, interpolation=linear, extrapolation=nearest);
+        h_mes == h/hmax*100;
+        bathIn.P == bathOutGaz.P;
+        bathOutLiq.P == bathOutGaz.P;
+    end
+end

@@ -1,0 +1,16 @@
+component Mixer2 < simCryogenics.Elements.Mixer
+    % Mixer2 : 1.5
+    %
+    % This component is a mixer. It allows to connect several components to another one.
+    %  
+    % This component impose both enthalpy and flowrate on the outlet and 
+    % pressure on inlets. To ensure compilation, the mixer inlets must be
+    % connected to a component node that impose pressure (such as a pipe
+    % inlet). The outlet must be connected to a component node that 
+    % impose both flowrate and enthalpy (such a valve outlet)
+    
+    equations
+        out1.M  == in1.M+in2.M;
+        out1.H  == (in1.H*in1.M+in2.H*in2.M+{1e-6, 'W'})/(out1.M+{1e-6, 'kg/s'});
+    end
+end

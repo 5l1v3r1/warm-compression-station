@@ -1,0 +1,14 @@
+component (Hidden = true) verif
+    % verif
+    nodes
+        in1  = simCryogenics.fluid;
+    end
+
+    equations
+        assert(in1.P < in1.P_max, 'Pressure on this node is too high (>P_max)', Warn = true);
+        assert(in1.H < in1.H_max, 'Enthalpy on this node is too high (>H_max)', Warn = true);
+        assert(in1.P > in1.P_min, 'Pressure on this node is too low (<P_min)' , Warn = true);
+        assert(in1.H > in1.H_min, 'Enthalpy on this node is too low (<H_min)' , Warn = true);
+    end
+    
+end

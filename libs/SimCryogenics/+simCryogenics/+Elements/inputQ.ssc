@@ -1,0 +1,40 @@
+component  inputQ
+    
+    %     inputQ
+    
+    inputs
+        Q1 = {1,'W'};
+    end
+     
+    outputs
+        Qn = {zeros(20,1),'W'};
+    end
+    
+    parameters
+        N = {1,'1'};  %number of components
+    end
+    
+    equations
+
+           Qn(1) == Q1/N;
+           Qn(2) == Q1/N;
+           Qn(3) == Q1/N;
+           Qn(4) == Q1/N;
+           Qn(5) == Q1/N;
+           Qn(6) == Q1/N;
+           Qn(7) == Q1/N;
+           Qn(8) == Q1/N;
+           Qn(9) == Q1/N;
+           Qn(10) == Q1/N;
+           Qn(11) == Q1/N;
+           Qn(12) == Q1/N;
+           Qn(13) == Q1/N;
+           Qn(14) == Q1/N;
+           Qn(15) == Q1/N;
+           Qn(16) == Q1/N;
+           Qn(17) == Q1/N;
+           Qn(18) == Q1/N;
+           Qn(19) == Q1/N;
+           Qn(20) == Q1/N;
+    end
+end

@@ -1,0 +1,96 @@
+component Pipe
+    %
+    % Pipe
+    %
+    % This component models a 0D pipe. It differs from a simple port 
+    % connection because it imposes a variable pressure on both inlet and 
+    % outlet port. On the outlet port a temperature is also imposed.
+    %
+    % The inlet port must be connected to a port that imposes both a 
+    % temperature and flow rate (such as a compressor outlet or a valve 
+    % outlet).  The outlet port must be connected to a port that impose a 
+    % flow rate (such as a compressor inlet or a valve inlet).  
+    % 
+    % If you want to use an ideal pipe (differentiation of pressure, P, 
+    % with regard to time) the parameter 'Ideal' must be set to 1. 
+    % Otherwise, a non-Ideal pipe (differentiation of rho and u with 
+    % regard to time) will be used.
+    %
+    % The parameters Vol and initial conditions P0 and T0 must be positive
+    %
+    % Note :  The initial values for pressure and temperature should be set 
+    % to correspond with the actual values imposed on the component at the 
+    % time of initialization.
+    %
+    
+    nodes
+        in1  = simCryogenics.fluid; % in:Left
+        out1 = simCryogenics.fluid; % out:Right
+    end
+    
+    parameters
+        Vol   = { 1 , 'm^3'}; % Pipe volume        
+        Ideal = { 0 , '1'  }; % Ideal 1/0
+        P0    = { 1 , 'bar'}; % Initial pressure 
+        T0    = { 300 , 'K'  }; % Initial temperature
+    end
+    
+    variables (Access=private)
+        rho   = { 0, 'kg/m^3'  }; % Density
+        rho_p = { 0, 'kg/m^3/s'}; % For construction of the if conditional
+        u     = { 0, 'kJ/kg'    }; % Internal energy
+        P     = { 0, 'bar'     }; % Pressure
+        T     = { 0, 'K'       }; % Temperature
+        H     = { 0, 'kJ/kg'    }; % enthalpy to break loop
+    end
+    
+    components (Hidden=true)
+        v1 = simCryogenics.Utilities.verif;
+        v2 = simCryogenics.Utilities.verif;
+    end 
+    
+    function setup
+        % Assertions
+        if Vol <= 0,                    error('Volume must be positive');                      end
+        if P0 < in1.P_min,              error('Initial pressure must be higher than P_min');       end
+        if P0 > in1.P_max               error('Initial pressure must be lower than P_max');        end
+        if T0 < in1.T_min               error('Initial temperature  must be higher than T_min');   end
+        if T0 > in1.T_max               error('Initial temperature must be lower than T_max');     end        
+        if (Ideal ~= 0 && Ideal ~=1),   error('The "Ideal" parameter must be 1 or 0');                  end
+        
+        % Initialization
+        rho = {hecalc(3,   0, 'T', value(T0,'K'), 'P', value(P0,'Pa'), 0), 'kg/m^3'};
+        u   = {1e-3*hecalc(11,  0, 'T', value(T0,'K'), 'P', value(P0,'Pa'), 0), 'kJ/kg'  };
+        H   = {1e-3*hecalc(9,   0, 'T', value(T0,'K'), 'P', value(P0,'Pa'), 0), 'kJ/kg'  };
+        P   = P0;
+    end
+    
+    connections
+        connect(in1,  v1.in1);
+        connect(out1, v2.in1);
+    end   
+    
+    equations
+        in1.P   == out1.P;    
+        if Ideal == 1       % Ideal pipe equation   
+            T       == tablelookup(in1.P_P_H  , in1.H_P_H    , in1.T_P_H  , in1.P, in1.H, interpolation=linear, extrapolation=nearest);
+            P.der   == in1.R*T/(Vol*in1.Mol)*(in1.M-out1.M);
+            rho.der == 0;
+            rho_p   == 0;
+            u.der   == 0;
+            out1.P  == P;
+            H.der   == (in1.H-H)/{1e-3,'s'};
+            out1.H  == in1.H;
+        else                % Non Ideal pipe equations
+            T       == 0;
+            P.der   == 0;
+            rho.der == (in1.M-out1.M)/Vol;
+            rho_p   == (in1.M-out1.M)/Vol;
+            u.der   == (in1.M*in1.H-out1.M*out1.H)/(Vol*rho)-u*rho_p/rho;
+            out1.P  == tablelookup(out1.u_u_rho, out1.rho_u_rho, out1.P_u_rho, u, rho, interpolation=linear, extrapolation=nearest);
+            H.der   == 0;
+            out1.H  == tablelookup(out1.u_u_rho, out1.rho_u_rho, in1.H_u_rho , u, rho, interpolation=linear, extrapolation=nearest);    
+        end
+        
+    end
+end

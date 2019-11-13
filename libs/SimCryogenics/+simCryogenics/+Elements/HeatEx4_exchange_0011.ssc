@@ -1,0 +1,34 @@
+component(Hidden=true) HeatEx4_exchange_0011
+    % HeatEx4_exchange_0011
+    
+    inputs
+        Th = {zeros(10,1), 'K'};
+        Tm = {zeros(10,1), 'K'};
+        Tc = {zeros(10,1), 'K'};
+        Tvc = {zeros(10,1), 'K'};
+    end
+    
+    outputs
+        Qh = {zeros(10,1), 'W'};
+        Qm = {zeros(10,1), 'W'};
+        Qc = {zeros(10,1), 'W'};
+        Qvc = {zeros(10,1), 'W'};
+    end
+
+    parameters
+        hh_m   = { 800   , 'J/s/K'   }; % Exchange coefficient between the hot pipe and the middle pipe
+        hh_c   = { 800   , 'J/s/K'   }; % Exchange coefficient between the hot pipe and the cold pipe
+        hh_vc   = { 800   , 'J/s/K'   }; % Exchange coefficient between the hot pipe and the very cold pipe
+        hm_c   = { 800   , 'J/s/K'   }; % Exchange coefficient between the middle pipe and thecold pipe
+        hm_vc   = { 800   , 'J/s/K'   }; % Exchange coefficient between the middle pipe and the very cold pipe
+        hc_vc   = { 800   , 'J/s/K'   }; % Exchange coefficient between the cold pipe and the very cold pipe
+        N = {1,'1'}
+    end
+    
+    equations
+        Qh  == [-(Th(1:+1:N) - Tm(1:+1:N))*hh_m/N - (Th(1:+1:N) - Tc(N:-1:1))*hh_c/N - (Th(1:+1:N) - Tvc(N:-1:1))*hh_vc/N; {zeros(10-N,1),'W'}]; 
+        Qm  == [+(Th(1:+1:N) - Tm(1:+1:N))*hh_m/N - (Tm(1:+1:N) - Tc(N:-1:1))*hm_c/N - (Tm(1:+1:N) - Tvc(N:-1:1))*hm_vc/N; {zeros(10-N,1),'W'}];
+        Qc  == [+(Th(N:-1:1) - Tc(1:+1:N))*hh_c/N + (Tm(N:-1:1) - Tc(1:+1:N))*hm_c/N - (Tc(1:+1:N) - Tvc(1:+1:N))*hc_vc/N; {zeros(10-N,1),'W'}];
+        Qvc == [+(Th(N:-1:1) - Tvc(1:+1:N))*hh_vc/N + (Tm(N:-1:1) - Tvc(1:+1:N))*hm_vc/N + (Tc(1:+1:N) - Tvc(1:+1:N))*hc_vc/N; {zeros(10-N,1),'W'}];
+    end
+end

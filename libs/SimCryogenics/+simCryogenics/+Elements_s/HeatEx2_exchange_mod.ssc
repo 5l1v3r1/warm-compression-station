@@ -1,0 +1,38 @@
+component(Hidden=true) HeatEx2_exchange_mod
+    % HeatEx2_exchange_mod
+    
+    inputs
+        T1 = {zeros(10,1), 'K'};
+        T2 = {zeros(10,1), 'K'};
+        hh = {ones(10,1), 'W/K'};
+        hc = {ones(10,1), 'W/K'};
+    end
+    
+    variables 
+        h = {zeros(10,1), 'W/K'};
+    end
+    
+    outputs
+        Q1 = {zeros(10,1), 'W'};
+        Q2 = {zeros(10,1), 'W'};
+    end
+    
+    parameters
+        N = {1,'1'};
+        pad = {zeros(1,1), 'W'};
+    end
+    
+    function setup
+        if (N == 10)
+            pad = {[], 'W'};            
+        else
+            pad = {zeros(10-N,1), 'W'};
+        end
+    end
+    
+    equations 
+        Q1 == [(-T1(1:+1:N) + T2(N:-1:1)).*h(1:+1:N)/N; pad];
+        Q2 == [(+T1(N:-1:1) - T2(1:+1:N)).*h(N:-1:1)/N; pad];   
+        h == ones(10,1)./((ones(10,1)./(hc+{ones(10,1)*1e-6,'W/K'}))+(ones(10,1)./(hh+{ones(10,1)*1e-6,'W/K'}))); 
+    end
+end

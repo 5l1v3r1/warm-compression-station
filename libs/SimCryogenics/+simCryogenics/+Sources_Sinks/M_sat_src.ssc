@@ -1,0 +1,34 @@
+component M_sat_src
+    % M sat src : fixed
+    %
+    % This block is a perfect satured mass flow rate source. It impose a 
+    % constant saturated mass flow regardless the pressure.
+    %
+    % Flowrate must be greather than zero
+    % Mixture quality must be comprise beetween 0 and 1
+    %
+    
+    parameters
+        M =    { 0.01, 'kg/s'}; % Flowrate
+        Xmix = { 0.5,  '1'   }; % Mixture Quality
+    end
+    
+    nodes
+        M_sat_src  = simCryogenics.fluid; % :right
+    end
+        
+    function setup
+        if M < 0 
+            error('Flowrate must be greather than zero');
+        end
+        
+        if Xmix < 0 || 1 < Xmix
+            error('Mixture quality must be comprise beetween 0 and 1');
+        end
+    end
+    
+    equations
+        M_sat_src.M == M;
+        M_sat_src.H == tablelookup(M_sat_src.X_P_X, M_sat_src.P_P_X, M_sat_src.H_P_X, Xmix, M_sat_src.P, interpolation=linear);
+    end
+end

@@ -1,0 +1,23 @@
+component step
+    % PS Step
+    % This component outputs a physical signal step from init_val 
+    % to final_val at specified time step_time.
+  
+    outputs
+        val = {0, '1'}; %out :right
+    end
+    
+    parameters
+        init_val   = { 0,    '1'  }; % Initial output value
+        final_val  = { 1,    '1'  }; % Final output value
+        step_time  = { 1,    '1'  }; % Step time
+    end
+    
+    equations        
+        if (value(time,'s') <= step_time)
+            val == init_val;
+        else
+            val == final_val;
+        end
+    end
+end

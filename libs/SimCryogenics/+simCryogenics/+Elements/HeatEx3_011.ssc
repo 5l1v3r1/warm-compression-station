@@ -1,0 +1,167 @@
+component (Propagation=blocks) HeatEx3_011
+%     HX3_011
+%     This component is a three branches cross-current heat Exchanger
+%     
+%     The following variables are imposed to others components:
+%       - in1 node : pressure and enthalpy 
+%       - out1 node :  flow rate
+%       - in2/3 node : enthalpy and flow rate
+%       - out2/3 node : pressure
+%
+%     To ensure compilation, the heat Exchanger must be connected
+%     to components nodes that impose:
+%     - pressure and enthalpy on the in1 node
+%     - flowrate on the out1 node
+%     - flowrate and enthalpy on the in2/3 node
+%     - pressure on the out2/3 node
+%     
+%     Note : the initial temperature/flowrate/presure conditions should
+%     be equal to the actual value on the scheme (especially for heat
+%     exchangers connected to sources).
+%     
+%     All parameters must be positive     
+     
+    nodes        
+        in3  = simCryogenics.fluid; % in3:bottom
+        in2  = simCryogenics.fluid; % in2:bottom
+        out1 = simCryogenics.fluid; % out1:bottom
+        
+        out3 = simCryogenics.fluid; % out3:top        
+        out2 = simCryogenics.fluid; % out2:top
+        in1  = simCryogenics.fluid; % in1:top
+    end
+    
+    parameters
+        N    = { 8     , '1'       }; % Number of discrete elements
+        Vh   = { 2.3e-3, 'm^3'      }; % First passage volume
+        Vm   = { 2.3e-3, 'm^3'      }  % Second passage volume
+        Vc   = { 2.3e-3, 'm^3'      }; % Third passage volume
+        M    = { 13    , 'kg'       }; % Heat exchanger mass
+        Kh   = { 0   , 'bar*s/kg'   }; % First passage pressure drop
+        Km   = { 0   , 'bar*s/kg'   }; % Second passage pressure drop
+        Kc   = { 0  , 'bar*s/kg'    }; % Third passage pressure drop
+        hh_m = { 400   , 'J/s/K'    }; % Ex. coeff. between pass. 1 and 2
+        hh_c = { 400   , 'J/s/K'    }; % Ex. coeff. between pass. 1 and 3
+        hm_c = { 400   , 'J/s/K'    }; % Ex. coeff. between pass. 2 and 3
+        
+        Th0 = { 10    , 'K'         }; % Initial in1 temperature
+        Ph0 = { 16    , 'bar'       }; % Initial in1 pressure
+        Mh0 = { 0.037 , 'kg/s'      }; % Initial out1 flowrate  
+        
+        Tm0 = { 4.5   , 'K'         }; % Initial in2 temperature
+        Pm0 = { 1.1   , 'bar'       }; % Initial out2 pressure
+        Mm0 = { 0.037 , 'kg/s'      }; % Initial in2 flowrate   
+        
+        Tc0 = { 4.5   , 'K'         }; % Initial in3 temperature
+        Pc0 = { 1.1   , 'bar'       }; % Initial out3 pressure
+        Mc0 = { 0.037 , 'kg/s'      }; % Initial in3 flowrate    
+    end
+    
+    parameters(Hidden=true)
+        sensh = { 0 , '1'    }; % Sens hot flow      
+        sensm = { 1 , '1'    }; % Sens middle flow
+        sensc = { 1 , '1'    }; % Sens cold flow
+    end
+
+    components (Hidden=true)
+         e1 = simCryogenics.Elements.Tuy1D(V=Vh, M=M/3, K=Kh, N=N, sens=0 );
+         e2 = simCryogenics.Elements.Tuy1D(V=Vm, M=M/3, K=Km, N=N, sens=1 );
+         e3 = simCryogenics.Elements.Tuy1D(V=Vc, M=M/3, K=Kc, N=N, sens=1 );
+         q1 = simCryogenics.Elements.HeatEx3_exchange_011(hh_m=hh_m, hh_c=hh_c, hm_c=hm_c, N=N);
+     end
+     
+     function setup
+        if N < 1 || N > 10,
+            error('The number of elementary loop must be between 1 and 10');
+        end
+
+        if Vh <= 0 || Vm <= 0 || Vc <= 0 || M < 0 || Kh < 0 || Km < 0 || Kc < 0 || hm_c < 0|| hh_c < 0 || hh_m < 0
+            error('All component''s phyical parameters must be positive');
+        end
+        
+        if Ph0 < in1.P_min, error('Initial pressure of the first passage must be higher than P_min'); end
+        if Pm0 < in2.P_min, error('Initial pressure of the second passage must be higher than P_min'); end    
+        if Pc0 < in3.P_min, error('Initial pressure of the third passage must be higher than P_min'); end    
+        
+        if Ph0 > in1.P_max, error('Initial pressure of the first passage must be lower than P_max'); end
+        if Pm0 > in2.P_max, error('Initial pressure of the second passage must be lower than P_max'); end    
+        if Pc0 > in3.P_max, error('Initial pressure of the third passage must be lower than P_max'); end 
+             
+        if Th0 < in1.T_min, error('Initial temperature of the first passage must be higher than T_min'); end
+        if Tm0 < in2.T_min, error('Initial temperature of the second passage must be higher than T_min'); end    
+        if Tc0 < in3.T_min, error('Initial temperature of the third passage must be higher than T_min'); end    
+        
+        if Th0 > in1.T_max, error('Initial temperature of the first passage must be lower than T_max'); end
+        if Tm0 > in2.T_max, error('Initial temperature of the second passage must be lower than T_max'); end    
+        if Tc0 > in3.T_max, error('Initial temperature of the third passage must be lower than T_max'); end 
+        
+        if Mh0 < 0, error('Initial flowrate in the first passage must be greater than 0'); end        
+        if Mm0 < 0, error('Initial flowrate in the second passage must be greater than 0'); end    
+        if Mc0 < 0, error('Initial flowrate in the third passage must be greater than 0'); end   
+                
+        switch value(in1.gas,'1')
+            case 0
+                Hh0 = {hecalc(9,0,'T',value(Th0,'K'),'P',value(Ph0,'Pa'),0)/1e3, 'kJ/kg'};
+            case 1
+                Hh0 = {CoolProp.PropsSI('H', 'T', value(Th0,'K'), 'P', value(Ph0,'Pa'), 'Nitrogen')/1e3, 'kJ/kg'};
+        end
+        
+        switch value(in2.gas,'1')
+            case 0
+                Hm0 = {hecalc(9,0,'T',value(Tm0,'K'),'P',value(Pm0,'Pa'),0)/1e3, 'kJ/kg'};
+            case 1
+                Hm0 = {CoolProp.PropsSI('H', 'T', value(Tm0,'K'), 'P', value(Pm0,'Pa'), 'Nitrogen')/1e3, 'kJ/kg'};
+        end
+        
+        switch value(in3.gas,'1')
+            case 0
+                Hc0 = {hecalc(9,0,'T',value(Tc0,'K'),'P',value(Pc0,'Pa'),0)/1e3, 'kJ/kg'};
+            case 1
+                Hc0 = {CoolProp.PropsSI('H', 'T', value(Tc0,'K'), 'P', value(Pc0,'Pa'), 'Nitrogen')/1e3, 'kJ/kg'};
+        end
+        
+        Hh0v = value(Hh0,'J/kg');     Hm0v = value(Hm0,'J/kg');     Hc0v = value(Hc0,'J/kg');
+        Mh0v = value(Mh0,'kg/s');     Mm0v = value(Mm0,'kg/s');     Mc0v = value(Mc0,'kg/s');
+        Ph0v = value(Ph0,'bar');      Pm0v = value(Pm0,'bar');      Pc0v = value(Pc0,'bar');
+        Nv = value(N,'1');
+        Vhv = value(Vh,'m^3');        Vmv = value(Vm,'m^3');        Vcv = value(Vc,'m^3');
+        hh_mv = value(hh_m,'W/K');    hh_cv = value(hh_c,'W/K');    hm_cv = value(hm_c,'W/K');
+        senshv = value(sensh,'1');    sensmv = value(sensm,'1');    senscv = value(sensc,'1');
+        gas1v = value(in1.gas,'1');    gas2v = value(in2.gas,'1');  gas3v = value(in3.gas,'1');
+        Mv = value(M,'kg');
+                                                
+        f = @(Ht)ex_multizone_conti_centree_der_3b(	Hh0v ,Hm0v, Hc0v, Mh0v, Mm0v, Mc0v, Ph0v, Pm0v, Pc0v,...
+               Nv, Vhv, Vmv, Vcv, hh_mv, hh_cv, hm_cv, senshv, sensmv, senscv, Mv, gas1v, gas2v, gas3v, Ht);
+
+        H(1:3:3*Nv,1) = linspace(Hh0v  , Hc0v+0.5, Nv)'; % init guess Th
+        H(2:3:3*Nv,1) = linspace(Hm0v  , Hm0v,     Nv)'; % init guess Tm
+        H(3:3:3*Nv,1) = linspace(Hh0v-1, Hc0v,     Nv)'; % init guess Tc  
+
+        opt = optimset('Display','off','TolFun',1e-10,'TolX',1e-10);
+        H   = fsolve(f,H,opt);
+        
+        if (sensh == 0), HHout = {[H(1:3:end-2); zeros(10-value(N,'1'),1)], 'J/kg'};
+        else, HHout = {[H(end-2:-3:1); zeros(10-value(N,'1'),1)], 'J/kg'}; end
+        if (sensm == 0), HMout = {[H(2:3:end-1); zeros(10-value(N,'1'),1)], 'J/kg'};
+        else, HMout = {[H(end-1:-3:2); zeros(10-value(N,'1'),1)], 'J/kg'}; end
+        if (sensc == 0), HCout = {[H(3:3:end); zeros(10-value(N,'1'),1)], 'J/kg'};
+        else, HCout = {[H(end:-3:3); zeros(10-value(N,'1'),1)], 'J/kg'}; end
+        
+        e1.Hout0 = HHout;
+        e2.Hout0 = HMout;
+        e3.Hout0 = HCout;
+     end
+     
+     connections
+        connect(in1, e1.in1);	connect(e1.out1, out1) ;
+        connect(out2, e2.out1);	connect(e2.in1, in2) ; 
+        connect(out3, e3.out1);	connect(e3.in1, in3) ; 
+        
+        connect(q1.Qh, e1.Q)
+        connect(q1.Qm, e2.Q) 
+        connect(q1.Qc, e3.Q) 
+       	connect(e1.T, q1.T1)
+        connect(e2.T, q1.T2) 
+        connect(e3.T, q1.T3) 
+     end
+end

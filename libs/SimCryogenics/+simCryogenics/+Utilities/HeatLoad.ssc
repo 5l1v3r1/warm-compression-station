@@ -1,0 +1,24 @@
+component HeatLoad
+    % Heat load : 2
+    %
+    % For a good use of this component you must respect the following point :
+    %
+    % - Connect the in1 of the Thermal load block to a component that provied
+    % Temperature and pressure (not the mass flow)
+    %
+    %- Connect the out1 of the Thermal load block to a component that provied
+    % the mass flow (not the pressure neiter the temperature)
+    nodes
+        in1  = simCryogenics.fluid; % in1:Left
+        out1 = simCryogenics.fluid; % out1:Right
+    end
+    inputs
+        Win = {0,'J/s'};
+    end
+    
+    equations
+        out1.H == ((in1.M+{1e-6,'kg/s'})*in1.H + Win)/(in1.M+{1e-6,'kg/s'});
+        out1.P == in1.P;
+        out1.M == in1.M;
+    end
+end

@@ -1,0 +1,215 @@
+component Nef
+%     Nef : 4
+%     
+%     This component is a two flows cross current heat Exchanger
+%     
+%     The following variables are imposed to others components:
+%       - Hot inlet port : flow rate
+%       - Hot outlet port : both pressure and temperature 
+%       - Cold inlet port : both temperature and flow rate
+%       - Cold outlet port : pressure
+%     
+%     To ensure compilation, you must connect the heat Exchanger 
+%     to components that impose:
+%     - Both pressure and temperature on the hot inlet port
+%     - Flow rate on the hot outlet port 
+%     - Pressure on the cold inlet port
+%     - Both temperature and flow rate on the cold outlet port 
+%     
+%     Note : the T/M/P initial conditions should be equal to the actual 
+%     value on the scheme (especially for heat exchanger connected
+%     to sources).
+%     
+%     Parameters Vh, Vc, M, Kh, Kc parameter must be positive
+%        
+    nodes
+        outC = simCryogenics.fluid;  %outC:top
+        inH  = simCryogenics.fluid;  %inH:top
+        inC  = simCryogenics.fluid;  %inC:bottom
+        outH = simCryogenics.fluid;  %outH:bottom
+    end
+    
+    parameters 
+        N   = { 3     , '1'       }; % Number of elementary loop
+        Vh  = { 2.3e-3, 'm^3'     }; % Hot pipe volume
+        Vc  = { 2.3e-3, 'm^3'     }; % Cold pipe volume
+        M   = { 13    , 'kg'      }; % Masse of the aluminium
+        Kh  = { 0.6   , 'bar*s/kg'}; % Hot pressure drop coefficient
+        Kc  = { 0.35  , 'bar*s/kg'}; % Cold pressure drop coefficient
+        h   = { 480   , 'J/s/K'   }; % Exchange coefficient
+        Ph0 = { 16    , 'bar'     }; % Initial hot pressure
+        Th0 = { 10    , 'K'       }; % Initial hot temperature
+        Pc0 = { 1.1   , 'bar'     }; % Initial cold pressure
+        Tc0 = { 4.5   , 'K'       }; % Initial cold temperature
+        Mh0 = { 0.037 , 'kg/s'    }; % Initial hot mass flow
+        Mc0 = { 0.037 , 'kg/s'    }; % Initial cold mass flow        
+    end
+    
+    variables 
+        % For the calculation of the temperature
+        rhoH_H  = { zeros(3,1), 'kg/m^3'};
+        rhoC_H  = { zeros(3,1), 'kg/m^3'};
+        
+        % For the calculation of the mass flow
+        rhoH_M = { zeros(4,1), 'kg/m^3'};
+        rhoC_M = { zeros(4,1), 'kg/m^3'};
+               
+        THout  = { zeros(4,1), 'K'     };
+        TCout  = { zeros(4,1), 'K'     };
+        
+        HHout  = { zeros(3,1), 'kJ/kg'  };
+        HCout  = { zeros(3,1), 'kJ/kg'  };
+        
+        Q      = { zeros(3,1), 'J/s'   };
+        
+        CpH    = { zeros(3,1), 'kJ/kg/K'};
+        CpC    = { zeros(3,1), 'kJ/kg/K'};
+        Cpalu  = { zeros(3,1), 'kJ/kg/K'};
+        
+        dmh    = { zeros(3,1), 'kg/s'  };
+        dmc    = { zeros(3,1), 'kg/s'  };
+        
+        Mc     = { zeros(3,1), 'kg/s'  };
+        Mh     = { zeros(3,1), 'kg/s'  };
+        
+        Pc     = { zeros(3,1), 'bar'   };
+        Ph     = { zeros(3,1), 'bar'   };
+        
+        Cst    = { 1, '1'              }; % Constant for reduce the beginning derivate
+    end
+    
+    function setup
+        if N <= 0
+            error('The number of elementary loop must be greater than 0');
+        end
+
+        if Vh <= 0
+            error('The volume of the hot pipe must be greater than 0');
+        end
+
+        if Vc <= 0
+            error('The volume of the cold pipe must be greater than 0');
+        end
+
+        if M <=0
+            error('The mass of the aluminium must be greater than 0');
+        end
+
+        if Kh <= 0
+            error('The loss of load coefficient in the hot pipe must be greater tnah 0');
+        end
+
+        if Kc <= 0
+            error('The loss of load coefficient in the hot pipe must be greater than 0');
+        end
+        
+        f = @(Tt)ex_multizone_conti_centree_der(value(Th0,'K'),...
+                                            value(Tc0,'K'),...
+                                            value(Mh0,'kg/s'),...
+                                            value(Mc0,'kg/s'),...
+                                            value(Ph0,'bar'),...
+                                            value(Pc0,'bar'),...
+                                            value(N,'1'),...
+                                            value(Vh,'m^3'),...
+                                            value(Vc,'m^3'),...
+                                            value(h,'W/K'),...
+                                            value(M,'kg'),Tt);
+                                        
+        T(1:2:2*value(N,'1'),1) = linspace(value(Th0,'K')  ,value(Tc0,'K')+0.5,value(N,'1'))'; % init guess Th
+        T(2:2:2*value(N,'1'),1) = linspace(value(Th0,'K')-1,value(Tc0,'K')    ,value(N,'1'))'; % init guess Tc  
+        
+        opt = optimset('Display','off','TolFun',1e-10,'TolX',1e-10);
+        T   = fsolve(f,T,opt);
+        
+        HHout = {1e-3*hecalc(9, 0, 'T', T(1:2:end) ,'P', value(Ph0,'Pa') , 0), 'kJ/kg'};
+        HCout = {1e-3*hecalc(9, 0, 'T', T(end:-2:1),'P', value(Pc0,'Pa') , 0), 'kJ/kg'};
+    end
+    
+    equations
+        
+        % rhoH properties for the calculation of H hot
+        rhoH_H(1)  == tablelookup(inH.P_P_H, inH.H_P_H, inH.rho_P_H ,inH.P, (inH.H    + HHout(1))/2, interpolation=linear);
+        rhoH_H(2)  == tablelookup(inH.P_P_H, inH.H_P_H, inH.rho_P_H ,inH.P, (HHout(1) + HHout(2))/2, interpolation=linear);
+        rhoH_H(3)  == tablelookup(inH.P_P_H, inH.H_P_H, inH.rho_P_H ,inH.P, (HHout(2) + HHout(3))/2, interpolation=linear);
+
+        %rhoH properties for the calculation of M hot
+        rhoH_M(1)  == tablelookup(inH.P_P_H, inH.H_P_H, inH.rho_P_H , inH.P, inH.H  , interpolation=linear);
+        rhoH_M(2)  == tablelookup(inH.P_P_H, inH.H_P_H, inH.rho_P_H , inH.P, HHout(1), interpolation=linear);
+        rhoH_M(3)  == tablelookup(inH.P_P_H, inH.H_P_H, inH.rho_P_H , inH.P, HHout(2), interpolation=linear);
+        rhoH_M(4)  == tablelookup(inH.P_P_H, inH.H_P_H, inH.rho_P_H , inH.P, HHout(3), interpolation=linear);
+
+        % THout properties for the calculation of Q
+        THout(1) == tablelookup(inH.P_P_H, inH.H_P_H, inH.T_P_H, inH.P, inH.H   , interpolation = linear);
+        THout(2) == tablelookup(inH.P_P_H, inH.H_P_H, inH.T_P_H, inH.P, HHout(1), interpolation = linear);
+        THout(3) == tablelookup(inH.P_P_H, inH.H_P_H, inH.T_P_H, inH.P, HHout(2), interpolation = linear);
+        THout(4) == tablelookup(inH.P_P_H, inH.H_P_H, inH.T_P_H, inH.P, HHout(3), interpolation = linear);
+
+        %CpH properties for calculation of H hot
+        CpH(1)   == tablelookup(inH.T_T_P, inH.P_T_P, inH.Cp_T_P  , (THout(1) + THout(2))/2, inH.P, interpolation=linear);
+        CpH(2)   == tablelookup(inH.T_T_P, inH.P_T_P, inH.Cp_T_P  , (THout(2) + THout(3))/2, inH.P, interpolation=linear);
+        CpH(3)   == tablelookup(inH.T_T_P, inH.P_T_P, inH.Cp_T_P  , (THout(3) + THout(4))/2, inH.P, interpolation=linear);
+            
+        % rhoC properties for calculation of H cold
+        rhoC_H(1)  == tablelookup(outC.P_P_H, outC.H_P_H, outC.rho_P_H , outC.P, (inC.H    + HCout(1))/2, interpolation=linear);
+        rhoC_H(2)  == tablelookup(outC.P_P_H, outC.H_P_H, outC.rho_P_H , outC.P, (HCout(1) + HCout(2))/2, interpolation=linear);
+        rhoC_H(3)  == tablelookup(outC.P_P_H, outC.H_P_H, outC.rho_P_H , outC.P, (HCout(2) + HCout(3))/2, interpolation=linear);
+
+        % rhoC properties for calculation of M cold
+        rhoC_M(1)  == tablelookup(outC.P_P_H, outC.H_P_H, outC.rho_P_H , outC.P, inC.H   , interpolation=linear);
+        rhoC_M(2)  == tablelookup(outC.P_P_H, outC.H_P_H, outC.rho_P_H , outC.P, HCout(1), interpolation=linear);
+        rhoC_M(3)  == tablelookup(outC.P_P_H, outC.H_P_H, outC.rho_P_H , outC.P, HCout(2), interpolation=linear);
+        rhoC_M(4)  == tablelookup(outC.P_P_H, outC.H_P_H, outC.rho_P_H , outC.P, HCout(3), interpolation=linear);
+
+        % TCout properties for the calculation of Q        
+        TCout(1) == tablelookup(outC.P_P_H, outC.H_P_H, outC.T_P_H, outC.P, inC.H   , interpolation = linear);
+        TCout(2) == tablelookup(outC.P_P_H, outC.H_P_H, outC.T_P_H, outC.P, HCout(1), interpolation = linear);
+        TCout(3) == tablelookup(outC.P_P_H, outC.H_P_H, outC.T_P_H, outC.P, HCout(2), interpolation = linear);
+        TCout(4) == tablelookup(outC.P_P_H, outC.H_P_H, outC.T_P_H, outC.P, HCout(3), interpolation = linear);
+
+        % CpC properties for calculation of T cold
+        CpC(1)   == tablelookup(outC.T_T_P, outC.P_T_P, outC.Cp_T_P  , (TCout(1) + TCout(2))/2, outC.P, interpolation=linear);
+        CpC(2)   == tablelookup(outC.T_T_P, outC.P_T_P, outC.Cp_T_P  , (TCout(2) + TCout(3))/2, outC.P, interpolation=linear);
+        CpC(3)   == tablelookup(outC.T_T_P, outC.P_T_P, outC.Cp_T_P  , (TCout(3) + TCout(4))/2, outC.P, interpolation=linear);
+
+        % Cpalu for the calculation of T hot and T cold
+        Cpalu(1) == tablelookup(inH.Th_Tc, inH.Cpalum_Th_Tc, (THout(1) + THout(2) + TCout(4) + TCout(3))/4, interpolation=cubic);
+        Cpalu(2) == tablelookup(inH.Th_Tc, inH.Cpalum_Th_Tc, (THout(2) + THout(3) + TCout(3) + TCout(2))/4, interpolation=cubic);
+        Cpalu(3) == tablelookup(inH.Th_Tc, inH.Cpalum_Th_Tc, (THout(3) + THout(4) + TCout(2) + TCout(4))/4, interpolation=cubic);
+            
+        Q(1:3) == (THout(1:3) + THout(2:4) - TCout(4:-1:2) - TCout(3:-1:1))*h/(2*N);
+        
+        HHout(1:3).der == N*(outH.M*([inH.H;HHout(1:2)] - HHout(1:3)) - Q(1:3)   )./(rhoH_H(1:3) * Vh + M*Cpalu(1:3)   ./(2*CpH(1:3)));
+        
+        HCout(1:3).der == N*(outC.M*([inC.H;HCout(1:2)] - HCout(1:3)) + Q(3:-1:1))./(rhoC_H(1:3) * Vc + M*Cpalu(3:-1:1)./(2*CpC(1:3)));
+        
+        if(time<{10,'s'})
+            Cst == time/{10,'s'};
+        else
+            Cst == 1;
+        end
+        
+        dmh(1:3) == 0*Cst*(rhoH_M(2:4) - rhoH_M(1:3))./(HHout(1:3) - [inH.H;HHout(1:2)]) * Vh.* (outH.M*([inH.H;HHout(1:2)] - HHout(1:3)) - Q(1:3)   )./(rhoH_H(1:3) * Vh + M*Cpalu(1:3)   ./(2*CpH(1:3)));        
+        dmc(1:3) == 0*Cst*(rhoC_M(2:4) - rhoC_M(1:3))./(HCout(1:3) - [inC.H;HCout(1:2)]) * Vc.* (outC.M*([inC.H;HCout(1:2)] - HCout(1:3)) + Q(3:-1:1))./(rhoC_H(1:3) * Vc + M*Cpalu(3:-1:1)./(2*CpC(1:3)));
+        
+        Mh(1)   == outH.M + 0*dmh(3);
+        Mh(2:3) == Mh(1:2)+ 0*dmh(2:-1:1);
+        
+        Mc(1)   == inC.M  - 0*dmc(1);
+        Mc(2:3) == Mc(1:2)- 0*dmc(2:3);
+        
+        Ph(1)   == inH.P   - Kh/N*Mh(3);
+        Ph(2:3) == Ph(1:2) - Kh/N*Mh(2:-1:1);
+        
+        Pc(1)   == outC.P  + Kc/N*Mc(3);
+        Pc(2:3) == Pc(1:2) + Kc/N*Mc(2:-1:1);
+        
+        outC.H == HCout(3);
+        outH.H == HHout(3);
+        
+        inH.M  == Mh(3);
+        outC.M == Mc(3);
+        
+        outH.P == Ph(3);
+        inC.P  == Pc(3);
+    end
+end

@@ -1,0 +1,123 @@
+component (Hidden=true) PhaseSepEq
+    % PhaseSepEq
+    
+	nodes
+        bathOutGaz  = simCryogenics.fluid; 
+        bathOutLiq  = simCryogenics.fluid;
+        bathIn      = simCryogenics.fluid;
+    end
+    
+    inputs
+        Q1  = { 0, 'W' };
+        Q2  = { 0, 'W' };
+        Q3  = { 0, 'W' };
+    end 
+    
+    outputs
+        X = { 0, '1'};
+        h = { 0, '1'};
+        T = { 0, 'K'};
+    end
+    
+    parameters
+        hmax  = { 1.5, 'm'  }; % Bath height
+        S     = { 0.2, 'm^2'}; % Surface
+        P0    = { 1.1, 'bar'}; % Initial pressure
+        h0    = { 50,  '1'  }; % Initial liquid height
+        T0    = { 4.5, 'K'  }; % Initial temperature
+     end
+    
+     variables
+        rho_der = { 0, 'kg/m^3/s'   }; % Density
+        rho     = { 0, 'kg/m^3'     }; % Density
+        u       = { 0, 'kJ/kg'      }; % Internal energy
+        HG      = { 0, 'kJ/kg'      }; % Saturated Gaz enthalpy
+        HL      = { 0, 'kJ/kg'      }; % Saturated Liquid enthalpy
+        H       = { 0, 'kJ/kg'      }; % Enthalpy
+        Q_heat  = { 0, 'W'          }; 
+    end
+
+    function setup
+
+        if (value(h0,'1') > 0)
+            if bathOutGaz.gas==0
+                rho = {     hecalc(3,   0, 0, 1-value(h0,'1')/100, 'P', value(P0,'Pa'), 0), 'kg/m^3'};
+                u   = {1e-3*hecalc(11,  0, 0, 1-value(h0,'1')/100, 'P', value(P0,'Pa'), 0), 'kJ/kg' };
+            end
+
+            if bathOutGaz.gas==1
+                rho = { CoolProp.PropsSI('D', 'Q', 1-value(h0,'1')/100, 'P', value(P0,'Pa'), 'Nitrogen'), 'kg/m^3'};
+                u =   { CoolProp.PropsSI('U', 'Q', 1-value(h0,'1')/100, 'P', value(P0,'Pa'), 'Nitrogen'), 'J/kg' };
+            end
+        else
+            if bathOutGaz.gas==0
+                rho   = {     hecalc(3,   0, 'T', value(T0,'K'), 'P', value(P0,'Pa'), 0), 'kg/m^3'}; % non saturated vapor
+                u     = {1e-3*hecalc(11,  0, 'T', value(T0,'K'), 'P', value(P0,'Pa'), 0), 'kJ/kg' };
+            end
+
+            if bathOutGaz.gas==1
+                rho = { CoolProp.PropsSI('D', 'T', value(T0,'K'), 'P', value(P0,'Pa'), 'Nitrogen'), 'kg/m^3'};
+                u =   { CoolProp.PropsSI('U', 'T', value(T0,'K'), 'P', value(P0,'Pa'), 'Nitrogen'), 'J/kg' };
+            end
+        end
+    end
+    
+    equations       
+            
+        if h>0
+            Q_heat == Q3;
+            T       == tablelookup(bathIn.u_u_rho , bathIn.rho_u_rho , bathIn.T_u_rho , u, rho, interpolation=linear);
+            H       == 0; % H is not defined in this case
+            HG      == tablelookup(bathOutGaz.P_SV_P , bathOutGaz.HG_SV_P  , bathOutGaz.P, interpolation=linear);
+            HL      == tablelookup(bathOutLiq.P_SL_P , bathOutLiq.HL_SL_P  , bathOutLiq.P, interpolation=linear);
+            rho.der == (bathIn.M-bathOutLiq.M-bathOutGaz.M)/(hmax*S);
+            u.der   == (bathIn.H*bathIn.M-HG*bathOutGaz.M-HL*bathOutLiq.M+Q1+Q2+Q_heat-rho_der*hmax*S*u)/(rho*hmax*S);
+
+            bathOutGaz.H  == HG;
+            bathOutLiq.H  == HL;
+
+            bathOutGaz.P  == tablelookup(bathOutGaz.u_u_rho , bathOutGaz.rho_u_rho , bathOutGaz.P_u_rho , u, rho, interpolation=linear);
+            bathIn.P      == bathOutGaz.P;
+            bathOutGaz.P  == bathOutLiq.P;
+
+            rho_der == (bathIn.M-bathOutLiq.M-bathOutGaz.M)/(hmax*S);
+
+
+        else % non saturated vapor
+            
+            if (Q3 > 0)
+                Q_heat == 0;
+
+            else 
+                Q_heat == Q3;
+            end
+            assert(value(Q3,'W') > 0, 'In the case of a bath filled with non saturated vapor (h = 0), no heating should be provided to the phase separator (overwritting Q to 0W)', Warn = true);
+
+
+            T  == tablelookup(bathIn.u_u_rho , bathIn.rho_u_rho , bathIn.T_u_rho , u, rho, interpolation=linear);
+            H  == tablelookup(bathOutGaz.u_u_rho, bathOutGaz.rho_u_rho, bathIn.H_u_rho , u, rho, interpolation=linear);
+            HG == 0;
+            HL == 0;
+            rho.der == (bathIn.M-bathOutLiq.M-bathOutGaz.M)/(hmax*S);
+            u.der   == (bathIn.H*bathIn.M-H*bathOutGaz.M-H*bathOutLiq.M+Q1+Q2+Q_heat-rho_der*hmax*S*u)/(rho*hmax*S); 
+            
+            bathOutGaz.H  == H;
+            bathOutLiq.H  == H;
+            
+            bathOutGaz.P  == tablelookup(bathOutGaz.u_u_rho , bathOutGaz.rho_u_rho , bathOutGaz.P_u_rho , u, rho, interpolation=linear);
+            bathIn.P      == bathOutGaz.P;
+            bathOutGaz.P  == bathOutLiq.P;
+            
+            rho_der == (bathIn.M-bathOutLiq.M-bathOutGaz.M)/(hmax*S);   
+
+        end
+        
+        X == tablelookup(bathIn.u_u_rho , bathIn.rho_u_rho , bathIn.X_u_rho , u, rho, interpolation=linear);
+
+        if ((1-X)*100 < 0)
+            h == 0 ;
+        else
+            h == (1-X)*100;
+        end
+    end
+end

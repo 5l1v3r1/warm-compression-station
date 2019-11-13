@@ -1,0 +1,41 @@
+component Delay
+    % Delay
+    % This block returns the input signal delayed by the specified time.
+
+    % Copyright 2011 The MathWorks, Inc.
+
+    inputs
+        U = { 0, '1' }; % U:left
+    end
+
+    outputs
+        Y = { 0, '1' }; % Y:right
+    end
+
+    parameters
+        InputHistory = { 0.0, '1' };  % Input history
+        DelayTime    = { 1.0, 's' };  % Delay time
+    end
+
+    parameters (Access = private) 
+        MaxDelayTime = { 1.0, 's' };  % Maximum delay time
+    end
+
+    function setup %#simple
+        % Parameter range checking
+        if DelayTime < 0
+          pm_error('simscape:GreaterThanOrEqualToZero','Delay time')
+        end
+
+        MaxDelayTime = DelayTime;
+    end
+
+    equations 
+        if DelayTime>0
+            Y == delay( U, DelayTime, History = InputHistory, MaximumDelay = MaxDelayTime);
+        else
+            Y == U;
+        end
+    end
+
+end

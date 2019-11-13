@@ -1,0 +1,21 @@
+component TT3
+    % TT3 : 2 : fixed
+    %
+    % This component is a perfect pressure and temperature sensor
+    %
+    nodes
+        in1 = simCryogenics.fluid; % : Left
+        in2 = simCryogenics.fluid; % : Left
+        in3 = simCryogenics.fluid; % : Left
+    end
+    
+    outputs
+        TT = { zeros(3,1), 'K'   }; % T: Right
+    end
+    
+    equations
+        TT(1) == tablelookup(in1.P_P_H, in1.H_P_H, in1.T_P_H, in1.P, in1.H, interpolation=linear);    
+        TT(2) == tablelookup(in2.P_P_H, in2.H_P_H, in2.T_P_H, in2.P, in2.H, interpolation=linear);    
+        TT(3) == tablelookup(in3.P_P_H, in3.H_P_H, in3.T_P_H, in3.P, in3.H, interpolation=linear); 
+    end
+end

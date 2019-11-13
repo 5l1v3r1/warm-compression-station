@@ -1,0 +1,20 @@
+component Cooler
+    % Cooler : 1.5 : fixed
+    %
+    % This block is a cooler
+    nodes
+        in1  = simCryogenics.fluid; % in:left
+        out1  = simCryogenics.fluid; % out:right
+    end
+    
+    parameters
+        Tout = {300, 'K'}; % output temperature 
+    end
+ 
+    equations
+        out1.M == in1.M;
+        out1.P == in1.P;
+
+        out1.H == tablelookup(in1.T_T_P, in1.P_T_P, in1.H_T_P, Tout, in1.P, interpolation=linear);
+    end
+end

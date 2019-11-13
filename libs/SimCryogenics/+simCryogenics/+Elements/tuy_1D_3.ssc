@@ -1,0 +1,115 @@
+component tuy_1D_3
+    
+     %      tuy_1D_3 : 2 
+     %
+     %      It is composed with 20 tuyau_p_presion. It is a pipe that takes
+     %      into account the pressure drop.
+     %          
+     %      Inlet port calculates incoming pressure and needs to be 
+     %      connected to an outlet that imposes flow rate and temperature.
+     %      
+     %      Outlet port imposes flow rate and enthalpy and must be connected
+     %       to an intlet that imposes pressure.
+     %
+     %      It has a heating input, where the heat is distributed between 
+     %      the number of activated inside tuyau.
+     %      
+     %      N states the number of working inside tuyau at a time.
+     %
+     %      K is pressure loss coeffcient.
+     %
+     %      It might work if the inlet pressure and temperature are imposed.
+    nodes
+        in1 = simCryogenics.fluid; % : Left
+        out1 = simCryogenics.fluid; % : Right
+    end
+    
+    inputs
+        Q = { 0, 'W'}; % : Left
+    end
+
+    parameters
+        V = {1,'m^3'};
+        Pinit = {10, 'bar'};
+        Tinit = {10, 'K'};
+        K = {1,'bar*s/kg'};   %pressure loss coeficient
+        N = {1,'1'};     %number of control volume
+        Isochoric = { 0 , '1'  }; % Isochoric 1/0
+    end
+    
+    
+    components (Hidden=true)
+        e1 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>0));
+        e2 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>1));
+        e3 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>2));
+        e4 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>3));
+        e5 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>4));
+        e6 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>5));
+        e7 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>6));
+        e8 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>7));
+        e9 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>8));
+        e10 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>9));
+        e11 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>10));
+        e12 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>11));
+        e13 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>12));
+        e14 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>13));
+        e15 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>14));
+        e16 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>15));
+        e17 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>16));
+        e18 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>17));
+        e19 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>18));
+        e20 = simCryogenics.Elements.tuyau_p_presion(V=V/value(N,'1'),Pinit=Pinit,Tinit=Tinit,K=K/value(N,'1'),act=round(value(N,'1')>19));
+        
+         q1 = simCryogenics.Elements.inputQ(N=N);
+    end
+    
+    connections
+        connect(in1,e1.in1)
+        connect(e1.out1,e2.in1)
+        connect(e2.out1,e3.in1)
+        connect(e3.out1,e4.in1)
+        connect(e4.out1,e5.in1)
+        connect(e5.out1,e6.in1)
+        connect(e6.out1,e7.in1)
+        connect(e7.out1,e8.in1)
+        connect(e8.out1,e9.in1)
+        connect(e9.out1,e10.in1) 
+        connect(e10.out1,e11.in1)
+        connect(e11.out1,e12.in1)
+        connect(e12.out1,e13.in1)
+        connect(e13.out1,e14.in1)
+        connect(e14.out1,e15.in1)
+        connect(e15.out1,e16.in1)
+        connect(e16.out1,e17.in1)
+        connect(e17.out1,e18.in1)
+        connect(e18.out1,e19.in1)
+        connect(e19.out1,e20.in1)
+        connect(e20.out1,out1)
+         
+        connect(Q,q1.Q1)
+        
+        connect(q1.Qn(1),e1.Q)
+        connect(q1.Qn(2),e2.Q)
+        connect(q1.Qn(3),e3.Q)
+        connect(q1.Qn(4),e4.Q)
+        connect(q1.Qn(5),e5.Q)
+        connect(q1.Qn(6),e6.Q)
+        connect(q1.Qn(7),e7.Q)
+        connect(q1.Qn(8),e8.Q)
+        connect(q1.Qn(9),e9.Q)
+        connect(q1.Qn(10),e10.Q)
+        connect(q1.Qn(11),e11.Q)
+        connect(q1.Qn(12),e12.Q)
+        connect(q1.Qn(13),e13.Q)
+        connect(q1.Qn(14),e14.Q)
+        connect(q1.Qn(15),e15.Q)
+        connect(q1.Qn(16),e16.Q)
+        connect(q1.Qn(17),e17.Q)
+        connect(q1.Qn(18),e18.Q)
+        connect(q1.Qn(19),e19.Q)
+        connect(q1.Qn(20),e20.Q)
+    end
+    
+  
+    
+end

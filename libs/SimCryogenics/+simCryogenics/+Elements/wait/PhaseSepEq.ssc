@@ -1,0 +1,72 @@
+component (Hidden=true) PhaseSepEq
+    % PhaseSepEq
+    
+	nodes
+        bathOutGaz  = simCryogenics.fluid; 
+        bathOutLiq  = simCryogenics.fluid;
+        bathIn      = simCryogenics.fluid;
+    end
+    
+    inputs
+        Q1  = { 0, 'W' };
+        Q2  = { 0, 'W' };
+        Q3  = { 0, 'W' };
+    end 
+    
+    outputs
+        rho_o = { 0, 'kg/m^3'};
+        h = { 0, '1'};
+        T = { 0, 'K'};
+    end
+    
+    parameters
+        hmax  = { 1.5, 'm'  }; % Bath height
+        S     = { 0.2, 'm^2'}; % Surface
+        P0    = { 1.1, 'bar'}; % Initial pressure
+        h0    = { 50, '1'  }; % Initial liquid height
+     end
+    
+     variables
+        rho_der = { 0, 'kg/m^3/s'   }; % Density
+        rho     = { 0, 'kg/m^3'     }; % Density
+        u       = { 0, 'kJ/kg'      }; % Internal energy
+        HG      = { 0, 'kJ/kg'      }; % Saturated Gaz enthalpy
+        HL      = { 0, 'kJ/kg'      }; % Saturated Liquid enthalpy
+        X       = { 1, '1'};
+    end
+
+    function setup
+        
+        if bathOutGaz.gas==0
+            rho = {     hecalc(3,   0, 0, 1-value(h0,'1')/100, 'P', value(P0,'Pa'), 0), 'kg/m^3'};
+            u   = {1e-3*hecalc(11,  0, 0, 1-value(h0,'1')/100, 'P', value(P0,'Pa'), 0), 'kJ/kg' };
+        end
+        
+        if bathOutGaz.gas==1
+            rho = { CoolProp.PropsSI('D', 'Q', 1-value(h0,'1')/100, 'P', value(P0,'Pa'), 'Nitrogen'), 'kg/m^3'};
+            u =   { CoolProp.PropsSI('U', 'Q', 1-value(h0,'1')/100, 'P', value(P0,'Pa'), 'Nitrogen'), 'J/kg' };
+        end
+
+    end
+    
+    equations
+        T       == tablelookup(bathIn.u_u_rho , bathIn.rho_u_rho , bathIn.T_u_rho , u, rho, interpolation=linear, extrapolation=nearest);
+        HG      == tablelookup(bathOutGaz.P_SV_P , bathOutGaz.HG_SV_P  , bathOutGaz.P, interpolation=linear, extrapolation=nearest);
+        HL      == tablelookup(bathOutLiq.P_SL_P , bathOutLiq.HL_SL_P  , bathOutLiq.P, interpolation=linear, extrapolation=nearest);
+        rho.der == (bathIn.M-bathOutLiq.M-bathOutGaz.M)/(hmax*S);
+        u.der   == (bathIn.H*bathIn.M-HG*bathOutGaz.M-HL*bathOutLiq.M+Q1+Q2+Q3-rho_der*hmax*S*u)/(rho*hmax*S);
+        
+        X             == tablelookup(bathIn.u_u_rho , bathIn.rho_u_rho , bathIn.X_u_rho , u, rho, interpolation=linear, extrapolation=nearest);
+        h             == (1-X)*100;
+        bathOutGaz.H  == HG;
+        bathOutLiq.H  == HL;
+        
+        bathOutGaz.P  == tablelookup(bathOutGaz.u_u_rho , bathOutGaz.rho_u_rho , bathOutGaz.P_u_rho , u, rho, interpolation=linear, extrapolation=nearest);
+        bathIn.P      == bathOutGaz.P;
+        bathOutGaz.P  == bathOutLiq.P;
+        
+        rho_der == (bathIn.M-bathOutLiq.M-bathOutGaz.M)/(hmax*S);
+        
+        rho_o == rho;
+    end
+end
